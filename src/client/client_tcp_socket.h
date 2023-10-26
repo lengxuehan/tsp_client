@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "client_tcp_iface.h"
+#include "include/client/client_tcp_iface.h"
 #include "boost_support/socket/tcp/tcp_client.h"
 
 namespace tsp_client {

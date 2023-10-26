@@ -12,12 +12,12 @@
 #include <thread>
 #include <boost/asio/ssl.hpp>
 #include "tcp_types.h"
-#include "boost_support/common/common.h"
+#include "client/client_tcp_iface.h"
 
 namespace boost_support {
 namespace socket {
 namespace tcp {
-    using ssl_config = boost_support::common::ssl_config;
+    using ssl_config = tsp_client::ssl_config;
     /*
     @ Class Name        : Create Tcp Socket
     @ Class Description : Class used to create a tcp socket for handling transmission

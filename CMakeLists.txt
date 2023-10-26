@@ -55,3 +55,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         ssl
         crypto
         )
+
+add_subdirectory(demo/server)
