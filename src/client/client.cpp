@@ -1,11 +1,12 @@
 #include "include/client/client.h"
 #include <iostream>
+#include "tb_log.h"
 
 namespace tsp_client {
 
     client::client(const ssl_config& ssl_cfg)
             :client_connection_(ssl_cfg) {
-        std::cout << "tsp::client created" << std::endl;
+        TB_LOG_INFO("tsp::client created");
     }
 
     client::~client(void) {

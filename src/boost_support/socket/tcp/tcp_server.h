@@ -12,6 +12,8 @@
 #include <vector>
 #include "tcp_types.h"
 #include "client/client_tcp_iface.h"
+#include <boost/asio/ssl.hpp>
+
 namespace boost_support {
 namespace socket {
 namespace tcp {
@@ -31,6 +33,11 @@ namespace tcp {
             // ctor
             TcpServerConnection(boost::asio::io_context &io_context, TcpHandlerRead &&tcp_handler_read);
 
+            // ctor
+            TcpServerConnection(boost::asio::io_context &io_context,
+                                boost::asio::ssl::context &ssl_context,
+                                TcpHandlerRead &&tcp_handler_read);
+
             // dtor
             ~TcpServerConnection() = default;
 
@@ -48,6 +55,9 @@ namespace tcp {
             // Get reference to underlying socket
             TcpSocket &get_socket();
 
+            // Get reference to underlying ssl socket
+            boost::asio::ssl::stream<TcpSocket> &get_ssl_socket();
+
             // function to transmit tcp message
             bool transmit(TcpMessageConstPtr udp_tx_message);
 
@@ -59,10 +69,11 @@ namespace tcp {
 
         private:
             // tcp socket
-            TcpSocket tcp_socket_;
-
+            std::unique_ptr<TcpSocket> tcp_socket_;
             // handler read
             TcpHandlerRead tcp_handler_read_;
+            // ssl tcp socket
+            std::unique_ptr<boost::asio::ssl::stream<TcpSocket>> tcp_socket_ssl_;
         };
 
     public:
@@ -84,10 +95,13 @@ namespace tcp {
         // local port number
         uint16_t local_port_num_;
         // tcp socket accepter
-        std::unique_ptr<TcpAcceptor> tcp_acceptor_;
+        std::unique_ptr<TcpAcceptor> tcp_acceptor_{};
         // boost io context
         boost::asio::io_context io_context_;
+        boost::asio::ssl::context ssl_context_{boost::asio::ssl::context::sslv23};
         const ssl_config& ssl_cfg_;
+        // Support tls
+        bool support_tls_{false};
     };
 
 }  // namespace tcp

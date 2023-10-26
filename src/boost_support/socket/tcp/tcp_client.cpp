@@ -9,6 +9,7 @@
 #include "tcp_client.h"
 #include <utility>
 #include <iostream>
+#include "tb_log.h"
 
 namespace boost_support {
 namespace socket {
@@ -24,6 +25,7 @@ namespace tcp {
               running_{false},
               tcp_handler_read_{tcp_handler_read} {
         if (ssl_cfg.support_tls){
+            support_tls_ = true;
             tls_ctx_.load_verify_file(ssl_cfg.str_ca_path); // 如果证书是一个字节流，则使用接口add_certificate_authority
             tls_ctx_.load_verify_file(ssl_cfg.str_client_key_path);
             tls_ctx_.load_verify_file(ssl_cfg.str_client_csr_path);
@@ -78,9 +80,9 @@ namespace tcp {
                                                                    local_port_num_), ec);
                 if (ec.value() == boost::system::errc::success) {
                     // Socket binding success
-                    std::cout << "Tcp Socket opened and bound to "
-                              << "<" << tcp_socket_tls_->lowest_layer().local_endpoint().address().to_string() << ","
-                              << tcp_socket_tls_->lowest_layer().local_endpoint().port() << ">" << std::endl;
+                    TB_LOG_INFO("Tcp with ssl Socket opened and bound to <%s,%d>",
+                                tcp_socket_tls_->lowest_layer().local_endpoint().address().to_string().c_str(),
+                                tcp_socket_tls_->lowest_layer().local_endpoint().port());
                     retVal = true;
                 } else {
                     // Socket binding failed

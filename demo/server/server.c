@@ -18,7 +18,8 @@ void signal_init_handler(int) {
 
 int main() {
     std::cout << "Hello, World!" << std::endl;
-    boost_support::socket::tcp::CreateTcpServerSocket server_socket("127.0.0.1", 8888);
+    tsp_client::ssl_config ssl_cfg{};
+    boost_support::socket::tcp::CreateTcpServerSocket server_socket("127.0.0.1", 8888, ssl_cfg);
     server_socket.get_tcp_server_connection(on_new_message);
 
     signal(SIGINT, &signal_init_handler);
