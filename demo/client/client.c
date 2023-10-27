@@ -34,5 +34,6 @@ int main() {
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
     cv.wait(lock);
+    client.disconnect();
     return 0;
 }

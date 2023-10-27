@@ -10,7 +10,7 @@ namespace tsp_client {
 
     client_connection::~client_connection(void) {
         client_->disconnect();
-        std::cout << "tsp_client_::connection destroyed" << std::endl;
+        std::cout << "client_connection::client_connection destroyed" << std::endl;
     }
 
     bool client_connection::connect(const std::string &host, std::size_t port,

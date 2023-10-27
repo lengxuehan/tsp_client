@@ -31,9 +31,8 @@ namespace tcp {
             ssl_context_.use_tmp_dh_file("/mnt/d/work/tsp_client/demo/etc/server/dh2048.pem");
             ssl_context_.load_verify_file(ssl_cfg.str_ca_path);
             ssl_context_.set_options(
-                    context::default_workarounds | context::tlsv12_server | context::single_dh_use);
-            //ssl_context_.set_verify_mode(1); // server side
-            ssl_context_.set_verify_mode(verify_peer | verify_fail_if_no_peer_cert); //double
+                    context::default_workarounds | context::verify_peer | context::single_dh_use);
+            ssl_context_.set_verify_mode(verify_peer); //
             ssl_context_.use_certificate_file(ssl_cfg.str_client_crt_path, context::pem);
             ssl_context_.use_private_key_file(ssl_cfg.str_client_key_path, context::pem);
         }else{

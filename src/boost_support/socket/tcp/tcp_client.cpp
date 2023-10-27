@@ -177,31 +177,25 @@ namespace tcp {
     bool CreateTcpClientSocket::disconnect_from_host() {
         TcpErrorCodeType ec{};
         bool ret_val{false};
-
+        TB_LOG_INFO("CreateTcpClientSocket::disconnect_from_host start to disconnect from host\n");
         if (support_tls_){
+            TB_LOG_INFO("Tcp tls socket start to cancel\n");
             tcp_socket_tls_->lowest_layer().cancel(ec);
             if (ec.value() == boost::system::errc::success) {
                 // Graceful shutdown
-                tcp_socket_tls_->shutdown(ec);
+                TB_LOG_INFO("Tcp tls socket lowest layer start to shutdown\n");
+                tcp_socket_tls_->lowest_layer().shutdown(TcpSocket::shutdown_both, ec);
                 if (ec.value() == boost::system::errc::success) {
-                    tcp_socket_tls_->lowest_layer().shutdown(TcpSocket::shutdown_both, ec);
-                    if (ec.value() == boost::system::errc::success) {
-                        // stop reading
-                        running_ = false;
-                        // Socket shutdown success
-                        ret_val = true;
-                    } else{
-                        std::cout << "Tcp Socket disconnection from host failed with error: " <<
-                        ec.message() << std::endl;
-
-                    }
+                    // stop reading
+                    running_ = false;
+                    // Socket shutdown success
+                    ret_val = true;
                 } else {
-                    std::cout << "Tcp Socket shut down SSL on the stream failed with error: "
+                    std::cout << "Tcp tls socket lowest layer shutdown failed with error: "
                     << ec.message() << std::endl;
-
                 }
             } else{
-                std::cout << "Tcp Socket cancel SSL on the stream failed with error: "
+                std::cout << "Tcp tls socket cancel SSL on the stream failed with error: "
                 << ec.message() << std::endl;
 
             }
@@ -316,6 +310,7 @@ namespace tcp {
         } else {
             std::cout << "Remote Disconnected with undefined error: " << ec.message()
                     << std::endl;
+            running_ = false;
         }
     }
     bool CreateTcpClientSocket::verify_certificate(bool pre_verified, boost::asio::ssl::verify_context& ctx){

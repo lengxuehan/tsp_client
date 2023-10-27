@@ -49,7 +49,10 @@ add_library(${PROJECT_NAME} SHARED
         ${SRCS_UTILITY}
         )
 
-# link all static libraries
+# set dynamic libray output path
+set(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
+# link all dynamic libraries
 target_link_libraries(${PROJECT_NAME} PUBLIC
         Threads::Threads
         ssl
