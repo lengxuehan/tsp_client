@@ -73,7 +73,7 @@ namespace tcp {
         std::unique_ptr<boost::asio::ssl::stream<TcpSocket>> tcp_socket_tls_{nullptr};
         // boost io context
         boost::asio::io_context io_context_;
-        boost::asio::ssl::context tls_ctx_{boost::asio::ssl::context::sslv23};
+        boost::asio::ssl::context tls_ctx_{boost::asio::ssl::context::tlsv12};
         // flag to terminate the thread
         std::atomic_bool exit_request_;
         // flag th start the thread

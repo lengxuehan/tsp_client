@@ -21,19 +21,26 @@ namespace tcp {
             : local_ip_address_{std::move(local_ip_address)},
               local_port_num_{local_port_num},
               ssl_cfg_{ssl_cfg} {
-        // Create accepter
-        tcp_acceptor_ = std::make_unique<TcpAcceptor>(io_context_, Tcp::endpoint(Tcp::v4(), local_port_num_), true);
-        TB_LOG_INFO("Tcp Socket Acceptor created at <%s, %d>", local_ip_address.c_str(), local_port_num_);
-
         if(ssl_cfg.support_tls){
+            // Create accepter
+            tcp_acceptor_ = std::make_unique<TcpAcceptor>(io_context_,
+                                                          Tcp::endpoint(Tcp::v4(), local_port_num_), true);
+            TB_LOG_INFO("Tcp Socket Acceptor created at <%s, %d>\n", local_ip_address_.c_str(), local_port_num_);
             using namespace boost::asio::ssl;
-            //TODO fixme
-            ssl_context_.use_tmp_dh_file("dh1024.pem");
-            ssl_context_.set_options(context::default_workarounds | context::no_sslv2 | context::single_dh_use);
+            //TODO fixme, just for a example
+            ssl_context_.use_tmp_dh_file("/mnt/d/work/tsp_client/demo/etc/server/dh2048.pem");
+            ssl_context_.load_verify_file(ssl_cfg.str_ca_path);
+            ssl_context_.set_options(
+                    context::default_workarounds | context::tlsv12_server | context::single_dh_use);
             //ssl_context_.set_verify_mode(1); // server side
             ssl_context_.set_verify_mode(verify_peer | verify_fail_if_no_peer_cert); //double
-            ssl_context_.use_certificate_file("server.cr", context::pem);
-            ssl_context_.use_private_key_file("server.key", context::pem);
+            ssl_context_.use_certificate_file(ssl_cfg.str_client_crt_path, context::pem);
+            ssl_context_.use_private_key_file(ssl_cfg.str_client_key_path, context::pem);
+        }else{
+            // Create accepter
+            tcp_acceptor_ = std::make_unique<TcpAcceptor>(io_context_,
+                                                          Tcp::endpoint(Tcp::v4(), local_port_num_), true);
+            TB_LOG_INFO("Tcp Socket Acceptor created at <%s, %d>\n", local_ip_address_.c_str(), local_port_num_);
         }
     }
 
@@ -42,15 +49,25 @@ namespace tcp {
         TcpErrorCodeType ec;
         Tcp::endpoint endpoint{};
         if(ssl_cfg_.support_tls){
-            CreateTcpServerSocket::TcpServerConnection tcp_connection{io_context_, ssl_context_, std::move(tcp_handler_read)};
+            CreateTcpServerSocket::TcpServerConnection tcp_connection{io_context_, ssl_context_,
+                                                                      std::move(tcp_handler_read)};
 
             // blocking accept
-            tcp_acceptor_->accept(tcp_connection.get_socket(), endpoint, ec);
+            tcp_acceptor_->accept(tcp_connection.get_ssl_socket().lowest_layer(), endpoint, ec);
             if (ec.value() == boost::system::errc::success) {
-                TB_LOG_INFO("Tcp with ssl Socket connection received from client <%s,%d",
+                TB_LOG_INFO("Tcp with tls Socket connection received from client <%s,%d>\n",
                             endpoint.address().to_string().c_str(), endpoint.port());
+                tcp_connection.get_ssl_socket().handshake(boost::asio::ssl::stream_base::server, ec);
+                TB_LOG_INFO("Tcp with tls Socket start to handshake with client host <%s,%d>\n",
+                            endpoint.address().to_string().c_str(),
+                            endpoint.port());
+                if (ec.value() == boost::system::errc::success) {
+                    TB_LOG_INFO("Tcp with tls Socket handshake successful \n");
+                }else{
+                    TB_LOG_INFO("Tcp with tls Socket handshake failed: %s\n", ec.message().c_str());
+                }
             } else {
-                TB_LOG_INFO("Tcp with ssl Socket Connect to client failed with error: ", ec.message().c_str());
+                TB_LOG_INFO("Tcp with tls Socket Connect to client failed with error: %s\n", ec.message().c_str());
             }
             return tcp_connection;
         }else{
@@ -59,10 +76,10 @@ namespace tcp {
             // blocking accept
             tcp_acceptor_->accept(tcp_connection.get_socket(), endpoint, ec);
             if (ec.value() == boost::system::errc::success) {
-                TB_LOG_INFO("Tcp Socket connection received from client <%s,%d",
+                TB_LOG_INFO("Tcp Socket connection received from client <%s,%d>\n",
                             endpoint.address().to_string().c_str(), endpoint.port());
             } else {
-                TB_LOG_INFO("Tcp Socket Connect to client failed with error: ", ec.message().c_str());
+                TB_LOG_INFO("Tcp Socket Connect to client failed with error: %s\n", ec.message().c_str());
             }
             return tcp_connection;
         }
@@ -98,11 +115,11 @@ namespace tcp {
             // Check for error
             if (ec.value() == boost::system::errc::success) {
                 Tcp::endpoint endpoint_{tcp_socket_->remote_endpoint()};
-                TB_LOG_INFO("Tcp message sent to <%s,%d>",
+                TB_LOG_INFO("Tcp message sent to <%s,%d>\n",
                             endpoint_.address().to_string().c_str(), endpoint_.port());
                 ret_val = true;
             } else {
-                TB_LOG_INFO("Tcp message sending failed with error: %s", ec.message().c_str());
+                TB_LOG_INFO("Tcp message sending failed with error: %s\n", ec.message().c_str());
             }
         } else {
             boost::asio::write(*tcp_socket_ssl_,
@@ -111,11 +128,11 @@ namespace tcp {
             // Check for error
             if (ec.value() == boost::system::errc::success) {
                 Tcp::endpoint endpoint_{tcp_socket_ssl_->lowest_layer().remote_endpoint()};
-                TB_LOG_INFO("Tcp with ssl message sent to <%s,%d>",
+                TB_LOG_INFO("Tcp with ssl message sent to <%s,%d>\n",
                             endpoint_.address().to_string().c_str(), endpoint_.port());
                 ret_val = true;
             } else {
-                TB_LOG_INFO("Tcp with ssl  message sending failed with error: %s", ec.message().c_str());
+                TB_LOG_INFO("Tcp with ssl  message sending failed with error: %s\n", ec.message().c_str());
             }
         }
 
@@ -154,7 +171,7 @@ namespace tcp {
                                                       read_next_bytes), ec);
                 // all message received, transfer to upper layer
                 Tcp::endpoint endpoint{tcp_socket_->remote_endpoint()};
-                TB_LOG_INFO("Tcp Message received from <%s,%d>", endpoint.address().to_string().c_str(),
+                TB_LOG_INFO("Tcp Message received from <%s,%d>\n", endpoint.address().to_string().c_str(),
                             endpoint.port());
                 // fill the remote endpoints
                 tcp_rx_message->host_ip_address_ = endpoint.address().to_string();
@@ -165,7 +182,7 @@ namespace tcp {
                                                       read_next_bytes), ec);
                 // all message received, transfer to upper layer
                 Tcp::endpoint endpoint{tcp_socket_ssl_->lowest_layer().remote_endpoint()};
-                TB_LOG_INFO("Tcp with ssl Message received from <%s,%d>", endpoint.address().to_string().c_str(),
+                TB_LOG_INFO("Tcp with ssl Message received from <%s,%d>\n", endpoint.address().to_string().c_str(),
                             endpoint.port());
                 // fill the remote endpoints
                 tcp_rx_message->host_ip_address_ = endpoint.address().to_string();
@@ -193,7 +210,7 @@ namespace tcp {
             if (ec.value() == boost::system::errc::success) {
                 ret_val = true;
             } else {
-                TB_LOG_INFO("Tcp Socket Disconnection failed with error: %s", ec.message().c_str());
+                TB_LOG_INFO("Tcp Socket Disconnection failed with error: %s\n", ec.message().c_str());
             }
             tcp_socket_->close();
         }
@@ -205,11 +222,11 @@ namespace tcp {
                 if (ec.value() == boost::system::errc::success) {
                     ret_val = true;
                 } else {
-                    TB_LOG_INFO("Tcp with ssl Socket lowest layer Disconnection failed with error: %s",
+                    TB_LOG_INFO("Tcp with ssl Socket lowest layer Disconnection failed with error: %s\n",
                                 ec.message().c_str());
                 }
             }else {
-                TB_LOG_INFO("Tcp with ssl Socket Disconnection failed with error: %s", ec.message().c_str());
+                TB_LOG_INFO("Tcp with ssl Socket Disconnection failed with error: %s\n", ec.message().c_str());
             }
 
             tcp_socket_ssl_->lowest_layer().close();

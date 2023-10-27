@@ -5,12 +5,21 @@ namespace tsp_client {
 
     bool client_tcp_socket::connect(const std::string &addr, std::uint32_t port) {
         if(tcp_socket_ == nullptr){
-            tcp_socket_ = std::make_unique<TcpSocket>(addr, port, ssl_cfg_, [this](TcpMessagePtr)-> void{
-                // TODO handle tcp message
-                std::cout << "client_tcp_socket::connect recv tcp message from tsp" << std::endl;
-            });
+            // TODO fixme
+            std::string local_ip_address{"127.0.0.1"};
+            tcp_socket_ = std::make_unique<TcpSocket>(
+                    local_ip_address, 0U, ssl_cfg_,
+                    [this](TcpMessagePtr) -> void {
+                        // TODO handle tcp message
+                        std::cout
+                                << "client_tcp_socket::connect recv tcp message from tsp"
+                                << std::endl;
+                    });
         }
-        bool res = tcp_socket_->connect_to_host(addr, port);
+        bool res = tcp_socket_->open();
+        if(res) {
+            res = tcp_socket_->connect_to_host(addr, port);
+        }
         if(res){
             connected_ = true;
         }

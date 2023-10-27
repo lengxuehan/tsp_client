@@ -98,7 +98,7 @@ namespace tcp {
         std::unique_ptr<TcpAcceptor> tcp_acceptor_{};
         // boost io context
         boost::asio::io_context io_context_;
-        boost::asio::ssl::context ssl_context_{boost::asio::ssl::context::sslv23};
+        boost::asio::ssl::context ssl_context_{boost::asio::ssl::context::tlsv12};
         const ssl_config& ssl_cfg_;
         // Support tls
         bool support_tls_{false};

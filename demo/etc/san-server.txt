@@ -1,0 +1,14 @@
+[req]
+default_bits = 4096
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+[req_distinguished_name]
+countryName = cn
+stateOrProvinceName = hb
+localityName = wh
+organizationName = maga
+commonName = wtxu-server.com  
+[v3_req]
+subjectAltName = @alt_names
+[alt_names]
+DNS.1=*.wtxu-server.com

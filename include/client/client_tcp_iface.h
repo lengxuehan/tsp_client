@@ -17,7 +17,7 @@ namespace tsp_client {
     struct ssl_config{
         std::string str_ca_path{};
         std::string str_client_key_path{};
-        std::string str_client_csr_path{};
+        std::string str_client_crt_path{};
         bool support_tls{false};
     };
     class client_tcp_iface {

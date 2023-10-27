@@ -26,9 +26,10 @@ namespace tcp {
               tcp_handler_read_{tcp_handler_read} {
         if (ssl_cfg.support_tls){
             support_tls_ = true;
+            using namespace boost::asio::ssl;
             tls_ctx_.load_verify_file(ssl_cfg.str_ca_path); // 如果证书是一个字节流，则使用接口add_certificate_authority
-            tls_ctx_.load_verify_file(ssl_cfg.str_client_key_path);
-            tls_ctx_.load_verify_file(ssl_cfg.str_client_csr_path);
+            tls_ctx_.use_private_key_file(ssl_cfg.str_client_key_path, context::pem);
+            tls_ctx_.use_certificate_file(ssl_cfg.str_client_crt_path, context::pem);
             tcp_socket_tls_ = std::make_unique<boost::asio::ssl::stream<TcpSocket>>(io_context_, tls_ctx_);
         } else {
             // Create socket
@@ -80,13 +81,13 @@ namespace tcp {
                                                                    local_port_num_), ec);
                 if (ec.value() == boost::system::errc::success) {
                     // Socket binding success
-                    TB_LOG_INFO("Tcp with ssl Socket opened and bound to <%s,%d>",
+                    TB_LOG_INFO("Tcp with ssl Socket opened and bound to <%s,%d>\n",
                                 tcp_socket_tls_->lowest_layer().local_endpoint().address().to_string().c_str(),
                                 tcp_socket_tls_->lowest_layer().local_endpoint().port());
                     retVal = true;
                 } else {
                     // Socket binding failed
-                    std::cout << "Tcp Socket binding failed with message: " << ec.message() << std::endl;
+                    std::cout << "Tcp with  Socket binding failed with message: " << ec.message() << std::endl;
                     retVal = false;
                 }
             } else {
@@ -128,26 +129,29 @@ namespace tcp {
         if (support_tls_){
             // connect to provided ipAddress
             tcp_socket_tls_->lowest_layer().connect(
-                    Tcp::endpoint(TcpIpAddress::from_string(host_ip_address), 3496U), ec);
+                    Tcp::endpoint(TcpIpAddress::from_string(host_ip_address), host_port_num), ec);
             if (ec.value() == boost::system::errc::success) {
-                std::cout << "Tcp Socket connected to host "
-                          << "<" << tcp_socket_tls_->lowest_layer().remote_endpoint().address().to_string() << ","
-                          << tcp_socket_tls_->lowest_layer().remote_endpoint().port() << ">";
+                TB_LOG_INFO("Tcp with tls Socket connected to host <%s,%d>\n",
+                            tcp_socket_tls_->lowest_layer().remote_endpoint().address().to_string().c_str(),
+                            tcp_socket_tls_->lowest_layer().remote_endpoint().port());
                 // handshake
                 tcp_socket_tls_->handshake(boost::asio::ssl::stream_base::client, ec);
+                TB_LOG_INFO("Tcp with tls Socket handshake to host <%s,%d>\n",
+                            tcp_socket_tls_->lowest_layer().remote_endpoint().address().to_string().c_str(),
+                            tcp_socket_tls_->lowest_layer().remote_endpoint().port());
                 if (ec.value() == boost::system::errc::success){
-                    std::cout << "Tcp Socket connected to host "
-                              << "<" << tcp_socket_tls_->lowest_layer().remote_endpoint().address().to_string() << ","
-                              << tcp_socket_tls_->lowest_layer().remote_endpoint().port() << ">" << std::endl;
+                    TB_LOG_INFO("Tcp with tls Socket handshake to host");
                     // start reading
                     running_ = true;
                     cond_var_.notify_all();
                     ret_val = true;
                 } else{
-                    std::cout << "Handshake failed: " << ec.message() << std::endl;
+                    TB_LOG_INFO("Tcp with tls Socket handshake to host error: %s\n",
+                                ec.message().c_str());
                 }
             } else {
-                std::cout << "Tcp Socket connect to host failed with error: " << ec.message() << std::endl;
+                std::cout << "Tcp with tls Socket connect to host failed with error: "
+                << ec.message() << std::endl;
             }
         } else {
             // connect to provided ipAddress
@@ -326,7 +330,7 @@ namespace tcp {
         char subject_name[256];
         X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
         X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
-        std::cout << "Verifying " << subject_name << std::endl;
+        TB_LOG_INFO("Verifying %s\n", subject_name);
         return pre_verified;
     }
 }  // namespace tcp
