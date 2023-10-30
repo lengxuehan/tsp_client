@@ -11,7 +11,7 @@ void on_new_message(const TcpMessagePtr& res) {
 }
 
 std::condition_variable cv;
-
+bool running = true;
 void signal_init_handler(int) {
     cv.notify_all();
 }
@@ -24,7 +24,11 @@ int main() {
     ssl_cfg.str_client_key_path = "/mnt/d/work/tsp_client/demo/etc/server/server.key";
     ssl_cfg.str_client_crt_path = "/mnt/d/work/tsp_client/demo/etc/server/server.crt";
     boost_support::socket::tcp::CreateTcpServerSocket server_socket("127.0.0.1", 8888, ssl_cfg);
-    auto connection = server_socket.get_tcp_server_connection(on_new_message);
+    std::vector<boost_support::socket::tcp::CreateTcpServerSocket::TcpServerConnection> connections;
+    while (running){
+        auto&& connection = server_socket.get_tcp_server_connection(on_new_message);
+        connections.emplace_back(std::move(connection));
+    }
 
     signal(SIGINT, &signal_init_handler);
 

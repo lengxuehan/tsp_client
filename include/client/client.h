@@ -121,14 +121,14 @@ namespace tsp_client {
         client &send(const std::vector<uint8_t> &request, const reply_callback_t &callback);
 
         //!
-        //! same as the other send method
-        //! but future based: does not take any callback and return an std:;future to handle the reply
+        //! send the given command
+        //! the command is actually pipelined and only buffered, so nothing is sent to the network
+        //! please call commit() / sync_commit() to flush the buffer
         //!
         //! \param redis_cmd command to be sent
-        //! \return std::future to handler redis reply
+        //! \return current instance
         //!
-        std::future<std::vector<uint8_t>> send(const std::vector<uint8_t> &redis_cmd);
-
+        client &send(const std::vector<uint8_t> &request);
     private:
         //!
         //! \return whether a reconnection attempt should be performed
@@ -206,6 +206,8 @@ namespace tsp_client {
             reply_callback_t callback;
         };
 
+        void handle_message(const std::vector<uint8_t>& message);
+
     private:
         //!
         //! server ip we are connected to
@@ -261,11 +263,6 @@ namespace tsp_client {
         //!  callbacks thread safety
         //!
         std::mutex callbacks_mutex_;
-
-        //!
-        //! condvar for callbacks updates
-        //!
-        std::condition_variable sync_condvar_;
 
         //!
         //! number of callbacks currently being running

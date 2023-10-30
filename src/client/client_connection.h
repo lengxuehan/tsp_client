@@ -13,7 +13,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include "client_tcp_iface.h"
+#include "client/client_tcp_iface.h"
 
 namespace tsp_client {
     class client_connection {

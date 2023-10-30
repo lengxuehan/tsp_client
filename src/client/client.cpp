@@ -6,7 +6,7 @@ namespace tsp_client {
 
     client::client(const ssl_config& ssl_cfg)
             :client_connection_(ssl_cfg) {
-        TB_LOG_INFO("tsp::client created");
+        TB_LOG_INFO("tsp::client created\n");
     }
 
     client::~client(void) {
@@ -20,7 +20,7 @@ namespace tsp_client {
             client_connection_.disconnect();
         }
 
-        std::cout << "tsp::client destroyed" << std::endl;
+        TB_LOG_INFO("tsp::client destroyed\n");
     }
 
     void client::connect(
@@ -29,7 +29,7 @@ namespace tsp_client {
             std::uint32_t timeout_msecs,
             std::int32_t max_reconnects,
             std::uint32_t reconnect_interval_msecs) {
-        std::cout << "tsp::client attempts to connect" << std::endl;
+        TB_LOG_INFO("tsp::client attempts to connect\n");
 
         //! Save for auto reconnects
         server_ip_ = host;
@@ -43,7 +43,8 @@ namespace tsp_client {
             connect_callback_(host, port, connect_state::start);
         }
 
-        auto disconnection_handler = std::bind(&client::connection_disconnection_handler, this, std::placeholders::_1);
+        auto disconnection_handler = std::bind(&client::connection_disconnection_handler, this,
+                                               std::placeholders::_1);
         auto receive_handler = std::bind(&client::connection_receive_handler, this, std::placeholders::_1,
                                          std::placeholders::_2);
         bool connected = client_connection_.connect(host, port, disconnection_handler, receive_handler);
@@ -62,8 +63,10 @@ namespace tsp_client {
     }
 
     void client::disconnect() {
-        std::cout << "tsp::client attempts to disconnect ip:" << server_ip_ << " port:"
+        std::cout << "" << server_ip_ << " port:"
                   << server_port_ << std::endl;
+        TB_LOG_INFO("tsp::client attempts to disconnect ip:%s port:%d\n",
+                    server_ip_.c_str(), server_port_);
 
         //! close connection
         client_connection_.disconnect();
@@ -71,7 +74,7 @@ namespace tsp_client {
         //! make sure we clear buffer of unsent commands
         clear_callbacks();
 
-        std::cout << "tsp::client disconnected" << std::endl;
+        TB_LOG_INFO("tsp::client disconnected\n");
     }
 
     bool client::is_connected(void) const {
@@ -89,8 +92,20 @@ namespace tsp_client {
     client &client::send(const std::vector<uint8_t> &request, const reply_callback_t &callback) {
         std::lock_guard<std::mutex> lock_callback(callbacks_mutex_);
 
-        std::cout << "tsp::client attempts to store new command in the send buffer" << std::endl;
+        TB_LOG_INFO("tsp::client attempts to store new command in the send buffer\n");
         unprotected_send(request, callback);
+        TB_LOG_INFO("tsp::client stored new command in the send buffer\n");
+
+        return *this;
+    }
+
+    client &client::send(const std::vector<uint8_t> &request) {
+        std::lock_guard<std::mutex> lock_callback(callbacks_mutex_);
+
+        std::cout << "tsp::client attempts to store new command in the send buffer" << std::endl;
+        unprotected_send(request, [this](const std::vector<uint8_t> &message)->void{
+            handle_message(message);
+        });
         std::cout << "tsp::client stored new command in the send buffer" << std::endl;
 
         return *this;
@@ -124,7 +139,6 @@ namespace tsp_client {
         {
             std::lock_guard<std::mutex> lock(callbacks_mutex_);
             callbacks_running_ -= 1;
-            sync_condvar_.notify_all();
         }
     }
 
@@ -150,10 +164,12 @@ namespace tsp_client {
                 --callbacks_running_;
                 commands.pop();
             }
-
-            sync_condvar_.notify_all();
         });
         t.detach();
+    }
+
+    void client::handle_message(const std::vector<uint8_t> &message){
+
     }
 
     void client::resend_failed_commands(void) {
@@ -188,7 +204,8 @@ namespace tsp_client {
             connect_callback_(server_ip_, server_port_, connect_state::dropped);
         }
 
-        //! Lock the callbacks mutex of the base class to prevent more client commands from being issued until our reconnect has completed.
+        //! Lock the callbacks mutex of the base class to prevent more client commands from being
+        //! issued until our reconnect has completed.
         std::lock_guard<std::mutex> lock_callback(callbacks_mutex_);
 
         while (should_reconnect()) {
@@ -271,7 +288,7 @@ namespace tsp_client {
             connect_callback_(server_ip_, server_port_, connect_state::ok);
         }
 
-        std::cout << "client reconnected ok" << std::endl;
+        TB_LOG_INFO("client reconnected ok\n");
 
         re_auth();
         resend_failed_commands();

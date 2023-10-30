@@ -90,6 +90,8 @@ namespace tcp {
         TcpServerConnection get_tcp_server_connection(TcpHandlerRead &&tcp_handler_read);
 
     private:
+        bool verify_certificate(bool pre_verified,  boost::asio::ssl::verify_context& ctx);
+    private:
         // local Ip address
         std::string local_ip_address_;
         // local port number

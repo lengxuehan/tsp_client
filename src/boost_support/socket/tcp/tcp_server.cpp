@@ -30,8 +30,7 @@ namespace tcp {
             //TODO fixme, just for a example
             ssl_context_.use_tmp_dh_file("/mnt/d/work/tsp_client/demo/etc/server/dh2048.pem");
             ssl_context_.load_verify_file(ssl_cfg.str_ca_path);
-            ssl_context_.set_options(
-                    context::default_workarounds | context::verify_peer | context::single_dh_use);
+            ssl_context_.set_options(context::verify_peer | context::single_dh_use);
             ssl_context_.set_verify_mode(verify_peer); //
             ssl_context_.use_certificate_file(ssl_cfg.str_client_crt_path, context::pem);
             ssl_context_.use_private_key_file(ssl_cfg.str_client_key_path, context::pem);
@@ -41,6 +40,22 @@ namespace tcp {
                                                           Tcp::endpoint(Tcp::v4(), local_port_num_), true);
             TB_LOG_INFO("Tcp Socket Acceptor created at <%s, %d>\n", local_ip_address_.c_str(), local_port_num_);
         }
+    }
+
+    bool CreateTcpServerSocket::verify_certificate(bool pre_verified, boost::asio::ssl::verify_context& ctx){
+        // The verify callback can be used to check whether the certificate that is
+        // being presented is valid for the peer. For example, RFC 2818 describes
+        // the steps involved in doing this for HTTPS. Consult the OpenSSL
+        // documentation for more details. Note that the callback is called once
+        // for each certificate in the certificate chain, starting from the root
+        // certificate authority.
+
+        // In this example we will simply print the certificate's subject name.
+        char subject_name[256];
+        X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
+        X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
+        TB_LOG_INFO("Verifying %s\n", subject_name);
+        return pre_verified;
     }
 
     CreateTcpServerSocket::TcpServerConnection CreateTcpServerSocket::get_tcp_server_connection(
@@ -56,6 +71,9 @@ namespace tcp {
             if (ec.value() == boost::system::errc::success) {
                 TB_LOG_INFO("Tcp with tls Socket connection received from client <%s,%d>\n",
                             endpoint.address().to_string().c_str(), endpoint.port());
+                tcp_connection.get_ssl_socket().set_verify_callback([this](bool p, boost::asio::ssl::verify_context& context) {
+                    return verify_certificate(p, context);
+                });
                 tcp_connection.get_ssl_socket().handshake(boost::asio::ssl::stream_base::server, ec);
                 TB_LOG_INFO("Tcp with tls Socket start to handshake with client host <%s,%d>\n",
                             endpoint.address().to_string().c_str(),

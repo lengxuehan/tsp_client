@@ -135,10 +135,10 @@ namespace tcp {
                             tcp_socket_tls_->lowest_layer().remote_endpoint().address().to_string().c_str(),
                             tcp_socket_tls_->lowest_layer().remote_endpoint().port());
                 // handshake
-                tcp_socket_tls_->handshake(boost::asio::ssl::stream_base::client, ec);
                 TB_LOG_INFO("Tcp with tls Socket handshake to host <%s,%d>\n",
                             tcp_socket_tls_->lowest_layer().remote_endpoint().address().to_string().c_str(),
                             tcp_socket_tls_->lowest_layer().remote_endpoint().port());
+                tcp_socket_tls_->handshake(boost::asio::ssl::stream_base::client, ec);
                 if (ec.value() == boost::system::errc::success){
                     TB_LOG_INFO("Tcp with tls Socket handshake to host");
                     // start reading

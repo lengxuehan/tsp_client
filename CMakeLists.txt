@@ -31,6 +31,7 @@ file(GLOB_RECURSE SRCS_CLIENT "${CMAKE_CURRENT_SOURCE_DIR}/src/client/*.cpp")
 file(GLOB_RECURSE SRCS_NLOHMANN "${CMAKE_CURRENT_SOURCE_DIR}/src/nlohmann/*.cpp")
 file(GLOB_RECURSE SRCS_TRANSPORT "${CMAKE_CURRENT_SOURCE_DIR}/src/transport/*.cpp")
 file(GLOB_RECURSE SRCS_UTILITY "${CMAKE_CURRENT_SOURCE_DIR}/src/utility/*.cpp")
+file(GLOB_RECURSE SRCS_MESSAGES "${CMAKE_CURRENT_SOURCE_DIR}/src/messages/*.cpp")
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/
@@ -47,6 +48,7 @@ add_library(${PROJECT_NAME} SHARED
         ${SRCS_NLOHMANN}
         ${SRCS_TRANSPORT}
         ${SRCS_UTILITY}
+        ${SRCS_MESSAGES}
         )
 
 # set dynamic libray output path
