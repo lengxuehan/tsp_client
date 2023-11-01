@@ -1,5 +1,6 @@
 #include "include/client/client_connection.h"
 #include "client_tcp_socket.h"
+#include "tb_log.h"
 #include <iostream>
 
 namespace tsp_client {
@@ -17,23 +18,24 @@ namespace tsp_client {
                                     const disconnection_handler_t &client_disconnection_handler,
                                     const reply_callback_t &client_reply_callback) {
         try {
-            std::cout << "client_connection::connect attempts to connect host:" << host
-            <<" port:" << port << std::endl;
+            TB_LOG_INFO("client_connection::connect attempts to connect host:%s port:%d\n",
+                        host.c_str(), port);
 
             //! connect client
             bool res = client_->connect(host, (uint32_t) port);
             client_->set_on_disconnection_handler(
                     std::bind(&client_connection::tcp_client_disconnection_handler, this));
             if(res){
-                std::cout << "client_connection::connect successful to connect remote server" << std::endl;
+                client_->set_message_header_handler(PackHelper::parse_message_header);
+                TB_LOG_INFO("client_connection::connect successful to connect remote server\n");
             }else{
-                std::cout << "client_connection::connect failed to connect remote server" << std::endl;
+                TB_LOG_INFO("client_connection::connect failed to connect remote server\n");
             }
 
             return res;
         }
         catch (const std::exception &e) {
-            std::cout << std::string("client_connection::connect ") + e.what() << std::endl;
+            TB_LOG_INFO("client_connection::connect %s\n", e.what());
             throw std::exception(e);
         }
 

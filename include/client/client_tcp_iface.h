@@ -65,6 +65,16 @@ namespace tsp_client {
         //!
         virtual void set_on_disconnection_handler(const disconnection_handler_t &disconnection_handler) = 0;
 
+        //!
+        //! package header handler
+        //!
+        typedef std::function<uint32_t(const uint8_t *, uint32_t)> package_header_handler_t;
+        //!
+        //! set on message header parse handler
+        //!
+        //! \param header_handler handler to be called in case of parsing message header
+        //!
+        virtual void set_message_header_handler(const package_header_handler_t &header_handler) = 0;
     protected:
         const ssl_config& ssl_cfg_;
     };

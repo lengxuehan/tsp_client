@@ -1,6 +1,7 @@
 #include "include/client/client.h"
 #include <iostream>
 #include "tb_log.h"
+#include "packages/messages.h"
 
 namespace tsp_client {
 
@@ -169,7 +170,14 @@ namespace tsp_client {
     }
 
     void client::handle_message(const std::vector<uint8_t> &message){
-
+        MessageHeader header;
+        if (header.parse(message)) {
+            TB_LOG_INFO("client::handle_message parse message successful, status:%d, request_id:%s",
+                        header.status_code, header.request_id);
+        } else {
+            TB_LOG_INFO("client::handle_message parse message failed. message:%s",
+                        message.data());
+        }
     }
 
     void client::resend_failed_commands(void) {

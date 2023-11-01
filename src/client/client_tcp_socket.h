@@ -56,6 +56,13 @@ namespace tsp_client {
         //! \param disconnection_handler handler to be called in case of a disconnection
         //!
         void set_on_disconnection_handler(const disconnection_handler_t &disconnection_handler);
+
+        //!
+        //! set on message header parse handler
+        //!
+        //! \param header_handler handler to be called in case of parsing message header
+        //!
+        void set_message_header_handler(const package_header_handler_t &header_handler) override;
     private:
         //!
         //! tcp client for tsp

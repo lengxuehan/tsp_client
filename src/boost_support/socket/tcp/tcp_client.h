@@ -35,6 +35,8 @@ namespace tcp {
         using TcpErrorCodeType = boost::system::error_code;
         // Tcp function template used for reception
         using TcpHandlerRead = std::function<void(TcpMessagePtr)>;
+        // Tcp function template used for parse header
+        typedef std::function<uint32_t(const uint8_t *, uint32_t)> PackHeaderHandle;
 
     public:
         //ctor
@@ -46,6 +48,9 @@ namespace tcp {
 
         // Function to Open the socket
         bool open();
+
+        // Set tcp function to parse message header
+        void set(const PackHeaderHandle &handle);
 
         // Function to Connect to host
         bool connect_to_host(const std::string& host_ip_address, uint16_t host_port_num);
@@ -88,6 +93,7 @@ namespace tcp {
         TcpHandlerRead tcp_handler_read_;
         // Support tls
         bool support_tls_{false};
+        PackHeaderHandle		handle_header_{nullptr};
     };
 }  // namespace tcp
 }  // namespace socket

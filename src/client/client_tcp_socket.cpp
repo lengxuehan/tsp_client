@@ -1,4 +1,5 @@
 #include "client_tcp_socket.h"
+#include "tb_log.h"
 #include <iostream>
 
 namespace tsp_client {
@@ -9,11 +10,10 @@ namespace tsp_client {
             std::string local_ip_address{"127.0.0.1"};
             tcp_socket_ = std::make_unique<TcpSocket>(
                     local_ip_address, 0U, ssl_cfg_,
-                    [this](TcpMessagePtr) -> void {
+                    [this](TcpMessagePtr prt) -> void {
                         // TODO handle tcp message
-                        std::cout
-                                << "client_tcp_socket::connect recv tcp message from tsp"
-                                << std::endl;
+                        TB_LOG_INFO("client_tcp_socket::connect recv tcp message from tsp data size:%d\n",
+                                    prt->rxBuffer_.size());
                     });
         }
         bool res = tcp_socket_->open();
@@ -40,7 +40,7 @@ namespace tsp_client {
         tcp_message->txBuffer_.swap(request);
         bool res = tcp_socket_->transmit(std::move(tcp_message));
         if(!res && !disconnection_handler_){
-            std::cout << "client_tcp_socket::send failed, call disconnection_handler" << std::endl;
+            TB_LOG_INFO("client_tcp_socket::send failed, call disconnection_handler\n");
             disconnection_handler_();
         }
         return res;
@@ -48,5 +48,11 @@ namespace tsp_client {
 
     void client_tcp_socket::set_on_disconnection_handler(const disconnection_handler_t &disconnection_handler) {
         disconnection_handler_ = disconnection_handler;
+    }
+
+    void client_tcp_socket::set_message_header_handler(const package_header_handler_t &header_handler) {
+        if(tcp_socket_ != nullptr) {
+            tcp_socket_->set(header_handler);
+        }
     }
 } // namespace tsp_client

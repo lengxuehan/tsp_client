@@ -3,6 +3,7 @@
 #include <csignal>
 #include "client/client.h"
 #include "client/client_tcp_iface.h"
+#include "packages/messages.h"
 
 std::condition_variable cv;
 
@@ -28,6 +29,21 @@ int main() {
             std::cout << "client failed to connect from " << host << ":" << port << std::endl;
         }
     });
+
+    tsp_client::MessageHeader header;
+    std::cout << "head size:" << sizeof(header) << std::endl;
+    header.body_length = 0;
+    header.request_id[0] = 97;
+    header.request_id[1] = 97;
+    header.request_id[2] = 97;
+    header.request_id[3] = 97;
+    header.request_id[4] = 97;
+    header.request_id[5] = 97;
+    header.status_code = static_cast<uint8_t>(tsp_client::StatusCode::kNormal);
+    std::vector<uint8_t> data;
+    header.serialize(data);
+    std::cout << "data size:" << data.size() << std::endl;
+    client.send(data);
 
     signal(SIGINT, &signal_init_handler);
 

@@ -161,30 +161,25 @@ namespace tcp {
         bool connection_closed{false};
         TcpMessagePtr tcp_rx_message = std::make_unique<TcpMessageType>();
         // reserve the buffer
-        tcp_rx_message->rxBuffer_.resize(kDoipHeaderSize);
+        tcp_rx_message->rxBuffer_.resize(kMessageHeaderSize);
         if(tcp_socket_ != nullptr){
             // start blocking read to read Header first without ssl
             boost::asio::read(*tcp_socket_, boost::asio::buffer(&tcp_rx_message->rxBuffer_[0],
-                                                                kDoipHeaderSize), ec);
+                                                                kMessageHeaderSize), ec);
         }else{
             // start blocking read to read Header first with ssl
             boost::asio::read(*tcp_socket_ssl_, boost::asio::buffer(&tcp_rx_message->rxBuffer_[0],
-                                                                    kDoipHeaderSize), ec);
+                                                                    kMessageHeaderSize), ec);
         }
         // Check for error
         if (ec.value() == boost::system::errc::success) {
             // read the next bytes to read
-            uint32_t read_next_bytes = [&tcp_rx_message]() {
-                return ((uint32_t) ((uint32_t) ((tcp_rx_message->rxBuffer_[4] << 24) & 0xFF000000) |
-                                    (uint32_t) ((tcp_rx_message->rxBuffer_[5] << 16) & 0x00FF0000) |
-                                    (uint32_t) ((tcp_rx_message->rxBuffer_[6] << 8) & 0x0000FF00) |
-                                    (uint32_t) ((tcp_rx_message->rxBuffer_[7] & 0x000000FF))));
-            }();
+            uint32_t read_next_bytes = 0;
             // reserve the buffer
-            tcp_rx_message->rxBuffer_.resize(kDoipHeaderSize + std::size_t(read_next_bytes));
+            tcp_rx_message->rxBuffer_.resize(kMessageHeaderSize + std::size_t(read_next_bytes));
             if(tcp_socket_ != nullptr){
                 boost::asio::read(*tcp_socket_,
-                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[kDoipHeaderSize],
+                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[kMessageHeaderSize],
                                                       read_next_bytes), ec);
                 // all message received, transfer to upper layer
                 Tcp::endpoint endpoint{tcp_socket_->remote_endpoint()};
@@ -195,7 +190,7 @@ namespace tcp {
                 tcp_rx_message->host_port_num_ = endpoint.port();
             }else{
                 boost::asio::read(*tcp_socket_ssl_,
-                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[kDoipHeaderSize],
+                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[kMessageHeaderSize],
                                                       read_next_bytes), ec);
                 // all message received, transfer to upper layer
                 Tcp::endpoint endpoint{tcp_socket_ssl_->lowest_layer().remote_endpoint()};
