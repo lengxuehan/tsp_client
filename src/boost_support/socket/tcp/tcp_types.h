@@ -9,7 +9,6 @@
 
 #include <memory>
 #include <vector>
-#include "packages/packet_helper.h"
 
 namespace boost_support {
 namespace socket {
@@ -66,8 +65,6 @@ namespace tcp {
     using TcpMessageConstPtr = std::unique_ptr<const TcpMessageType>;
     // unique pointer to TcpMessage
     using TcpMessagePtr = std::unique_ptr<TcpMessageType>;
-    // Doip HeaderSize
-    const uint32_t kMessageHeaderSize = tsp_client::PackHelper::get_message_header_size();
 }  // namespace tcp
 }  // namespace socket
 }  // namespace boost_support

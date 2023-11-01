@@ -65,6 +65,11 @@ namespace tcp {
         handle_header_ = handle;
     }
 
+    void CreateTcpClientSocket::set_message_header_size(uint8_t size) {
+        TB_LOG_INFO("CreateTcpClientSocket::set_message_header_size: %d\n", size);
+        message_header_size_ = size;
+    }
+
     bool CreateTcpClientSocket::open() {
         TcpErrorCodeType ec{};
         bool retVal{false};
@@ -211,8 +216,8 @@ namespace tcp {
                 // Socket shutdown success
                 ret_val = true;
             } else {
-                std::cout << "Tcp Socket disconnection from host failed with error: "
-                          << ec.message() << std::endl;
+                TB_LOG_INFO("Tcp Socket disconnection from host failed with error:%s\n",
+                            ec.message().c_str());
             }
         }
         return ret_val;
@@ -268,26 +273,29 @@ namespace tcp {
         TcpErrorCodeType ec{};
         TcpMessagePtr tcp_rx_message{std::make_unique<TcpMessageType>()};
         // reserve the buffer
-        tcp_rx_message->rxBuffer_.resize(kMessageHeaderSize);
+        tcp_rx_message->rxBuffer_.resize(message_header_size_);
         // start blocking read to read Header first
         if(support_tls_){
-            boost::asio::read(*tcp_socket_tls_, boost::asio::buffer(&tcp_rx_message->rxBuffer_[0], kMessageHeaderSize), ec);
+            boost::asio::read(*tcp_socket_tls_, boost::asio::buffer(&tcp_rx_message->rxBuffer_[0],
+                                                                    message_header_size_), ec);
         } else{
-            boost::asio::read(*tcp_socket_, boost::asio::buffer(&tcp_rx_message->rxBuffer_[0], kMessageHeaderSize), ec);
+            boost::asio::read(*tcp_socket_, boost::asio::buffer(&tcp_rx_message->rxBuffer_[0],
+                                                                message_header_size_), ec);
         }
         // Check for error
         if (ec.value() == boost::system::errc::success) {
             // read the next bytes to read
-            std::uint32_t read_next_bytes = handle_header_(tcp_rx_message->rxBuffer_.data(), kMessageHeaderSize);
+            std::uint32_t read_next_bytes = handle_header_(tcp_rx_message->rxBuffer_.data(),
+                                                           message_header_size_);
             // reserve the buffer
-            tcp_rx_message->rxBuffer_.resize(kMessageHeaderSize + std::size_t(read_next_bytes));
+            tcp_rx_message->rxBuffer_.resize(message_header_size_ + std::size_t(read_next_bytes));
             if (support_tls_){
                 boost::asio::read(*tcp_socket_tls_,
-                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[kMessageHeaderSize],
+                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[message_header_size_],
                                                       read_next_bytes), ec);
             } else{
                 boost::asio::read(*tcp_socket_,
-                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[kMessageHeaderSize],
+                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[message_header_size_],
                                                       read_next_bytes), ec);
             }
             // all message received, transfer to upper layer
@@ -307,8 +315,7 @@ namespace tcp {
             running_ = false;
             std::cout << "Remote Disconnected with: " << ec.message();
         } else {
-            std::cout << "Remote Disconnected with undefined error: " << ec.message()
-                    << std::endl;
+            TB_LOG_INFO("Remote Disconnected with undefined error:%s\n", ec.message().c_str());
             running_ = false;
         }
     }

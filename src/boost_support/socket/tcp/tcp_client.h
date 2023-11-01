@@ -52,6 +52,9 @@ namespace tcp {
         // Set tcp function to parse message header
         void set(const PackHeaderHandle &handle);
 
+        // Set tcp message header size
+        void set_message_header_size(uint8_t size);
+
         // Function to Connect to host
         bool connect_to_host(const std::string& host_ip_address, uint16_t host_port_num);
 
@@ -94,6 +97,7 @@ namespace tcp {
         // Support tls
         bool support_tls_{false};
         PackHeaderHandle		handle_header_{nullptr};
+        uint8_t                 message_header_size_{0U};
     };
 }  // namespace tcp
 }  // namespace socket

@@ -3,6 +3,7 @@
 #include <vector>
 #include "boost_support/socket/tcp/tcp_server.h"
 #include "packages/messages.h"
+#include "packages/packet_helper.h"
 
 using TcpMessagePtr = boost_support::socket::tcp::TcpMessagePtr;
 
@@ -49,6 +50,7 @@ int main() {
         = server_socket.get_tcp_server_connection([&](const TcpMessagePtr &res) {
                     on_new_message(connections, res);
                 });
+        connection.set_message_header_size(tsp_client::PackHelper::get_message_header_size());
         connections.emplace_back(std::move(connection));
         connections[0].received_message();
     }

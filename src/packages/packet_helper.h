@@ -13,7 +13,7 @@
 namespace tsp_client {
 class PackHelper {
 public:
-    static uint32_t get_message_header_size();
+    static uint8_t get_message_header_size();
     static uint32_t parse_message_header(const uint8_t *data, uint32_t size);
 
 };

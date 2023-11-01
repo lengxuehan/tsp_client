@@ -37,12 +37,14 @@ namespace tsp_client {
         //!  * failed: failed to connect
         //!  * stopped: stop to try to reconnect
         //!
-        enum class connect_state {
+        enum class connect_state : std::uint8_t {
             dropped,
             start,
             sleeping,
-            ok,
-            failed,
+            connect_failed,
+            connected,
+            logout,
+            login,
             stopped
         };
 

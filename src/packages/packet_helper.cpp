@@ -3,7 +3,7 @@
 
 namespace tsp_client {
 
-    uint32_t PackHelper::get_message_header_size() {
+    uint8_t PackHelper::get_message_header_size() {
         return sizeof(MessageHeader);
     }
 

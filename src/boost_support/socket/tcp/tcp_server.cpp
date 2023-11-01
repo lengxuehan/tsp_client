@@ -6,7 +6,6 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "tcp_server.h"
-#include <iostream>
 #include "tb_log.h"
 
 namespace boost_support {
@@ -161,25 +160,25 @@ namespace tcp {
         bool connection_closed{false};
         TcpMessagePtr tcp_rx_message = std::make_unique<TcpMessageType>();
         // reserve the buffer
-        tcp_rx_message->rxBuffer_.resize(kMessageHeaderSize);
+        tcp_rx_message->rxBuffer_.resize(message_header_size_);
         if(tcp_socket_ != nullptr){
             // start blocking read to read Header first without ssl
             boost::asio::read(*tcp_socket_, boost::asio::buffer(&tcp_rx_message->rxBuffer_[0],
-                                                                kMessageHeaderSize), ec);
+                                                                message_header_size_), ec);
         }else{
             // start blocking read to read Header first with ssl
             boost::asio::read(*tcp_socket_ssl_, boost::asio::buffer(&tcp_rx_message->rxBuffer_[0],
-                                                                    kMessageHeaderSize), ec);
+                                                                    message_header_size_), ec);
         }
         // Check for error
         if (ec.value() == boost::system::errc::success) {
             // read the next bytes to read
             uint32_t read_next_bytes = 0;
             // reserve the buffer
-            tcp_rx_message->rxBuffer_.resize(kMessageHeaderSize + std::size_t(read_next_bytes));
+            tcp_rx_message->rxBuffer_.resize(message_header_size_ + std::size_t(read_next_bytes));
             if(tcp_socket_ != nullptr){
                 boost::asio::read(*tcp_socket_,
-                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[kMessageHeaderSize],
+                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[message_header_size_],
                                                       read_next_bytes), ec);
                 // all message received, transfer to upper layer
                 Tcp::endpoint endpoint{tcp_socket_->remote_endpoint()};
@@ -190,7 +189,7 @@ namespace tcp {
                 tcp_rx_message->host_port_num_ = endpoint.port();
             }else{
                 boost::asio::read(*tcp_socket_ssl_,
-                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[kMessageHeaderSize],
+                                  boost::asio::buffer(&tcp_rx_message->rxBuffer_[message_header_size_],
                                                       read_next_bytes), ec);
                 // all message received, transfer to upper layer
                 Tcp::endpoint endpoint{tcp_socket_ssl_->lowest_layer().remote_endpoint()};
@@ -204,10 +203,10 @@ namespace tcp {
             tcp_handler_read_(std::move(tcp_rx_message));
 
         } else if (ec.value() == boost::asio::error::eof) {
-            std::cout << "Remote Disconnected with: " << ec.message() << std::endl;
+            TB_LOG_INFO("Remote Disconnected with: %s\n", ec.message().c_str());
             connection_closed = true;
         } else {
-            std::cout << "Remote Disconnected with undefined error: " << ec.message() << std::endl;
+            TB_LOG_INFO("Remote Disconnected with undefined error: %s\n", ec.message().c_str());
             connection_closed = true;
         }
         return connection_closed;
@@ -246,6 +245,10 @@ namespace tcp {
         return ret_val;
     }
 
+    void CreateTcpServerSocket::TcpServerConnection::set_message_header_size(uint8_t size) {
+        TB_LOG_INFO("set_message_header_size:%d\n", size);
+        message_header_size_ = size;
+    }
 }  // namespace tcp
 }  // namespace socket
 }  // namespace boost_support

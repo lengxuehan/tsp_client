@@ -67,6 +67,9 @@ namespace tcp {
             // function to close the socket
             bool shutdown();
 
+            // set message header size
+            void set_message_header_size(uint8_t size);
+
         private:
             // tcp socket
             std::unique_ptr<TcpSocket> tcp_socket_;
@@ -74,6 +77,8 @@ namespace tcp {
             TcpHandlerRead tcp_handler_read_;
             // ssl tcp socket
             std::unique_ptr<boost::asio::ssl::stream<TcpSocket>> tcp_socket_ssl_;
+            // message header size
+            uint8_t message_header_size_{0};
         };
 
     public:

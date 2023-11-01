@@ -11,9 +11,9 @@ namespace tsp_client {
             tcp_socket_ = std::make_unique<TcpSocket>(
                     local_ip_address, 0U, ssl_cfg_,
                     [this](TcpMessagePtr prt) -> void {
-                        // TODO handle tcp message
                         TB_LOG_INFO("client_tcp_socket::connect recv tcp message from tsp data size:%d\n",
                                     prt->rxBuffer_.size());
+                        package_handler_(prt->rxBuffer_);
                     });
         }
         bool res = tcp_socket_->open();
@@ -54,5 +54,15 @@ namespace tsp_client {
         if(tcp_socket_ != nullptr) {
             tcp_socket_->set(header_handler);
         }
+    }
+
+    void client_tcp_socket::set_message_header_size(uint8_t size) {
+        if(tcp_socket_ != nullptr) {
+            tcp_socket_->set_message_header_size(size);
+        }
+    }
+
+    void client_tcp_socket::set_message_handler(const package_handler_t &package_handler) {
+        package_handler_ = package_handler;
     }
 } // namespace tsp_client

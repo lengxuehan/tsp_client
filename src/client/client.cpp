@@ -172,7 +172,7 @@ namespace tsp_client {
     void client::handle_message(const std::vector<uint8_t> &message){
         MessageHeader header;
         if (header.parse(message)) {
-            TB_LOG_INFO("client::handle_message parse message successful, status:%d, request_id:%s",
+            TB_LOG_INFO("client::handle_message parse message successful, status:%d, request_id:%s\n",
                         header.status_code, header.request_id);
         } else {
             TB_LOG_INFO("client::handle_message parse message failed. message:%s",

@@ -1,7 +1,7 @@
 #include "include/client/client_connection.h"
 #include "client_tcp_socket.h"
 #include "tb_log.h"
-#include <iostream>
+#include "packages/packet_helper.h"
 
 namespace tsp_client {
 
@@ -11,7 +11,7 @@ namespace tsp_client {
 
     client_connection::~client_connection(void) {
         client_->disconnect();
-        std::cout << "client_connection::client_connection destroyed" << std::endl;
+        TB_LOG_INFO("client_connection::client_connection destroyed\n");
     }
 
     bool client_connection::connect(const std::string &host, std::size_t port,
@@ -25,10 +25,16 @@ namespace tsp_client {
             bool res = client_->connect(host, (uint32_t) port);
             client_->set_on_disconnection_handler(
                     std::bind(&client_connection::tcp_client_disconnection_handler, this));
-            if(res){
+            if(res) {
                 client_->set_message_header_handler(PackHelper::parse_message_header);
+                client_->set_message_header_size(PackHelper::get_message_header_size());
+                client_->set_message_handler([this](const std::vector<uint8_t> &data)->bool {
+                    return this->tcp_client_receive_handler(data);
+                });
+                reply_callback_ = client_reply_callback;
+                disconnection_handler_ = client_disconnection_handler;
                 TB_LOG_INFO("client_connection::connect successful to connect remote server\n");
-            }else{
+            } else {
                 TB_LOG_INFO("client_connection::connect failed to connect remote server\n");
             }
 
@@ -38,18 +44,13 @@ namespace tsp_client {
             TB_LOG_INFO("client_connection::connect %s\n", e.what());
             throw std::exception(e);
         }
-
-        // TODO implement me
-        reply_callback_ = client_reply_callback;
-        disconnection_handler_ = client_disconnection_handler;
     }
 
     void client_connection::disconnect() {
-        std::cout << "client_connection::disconnect attempts to disconnect" << std::endl;
-
+        TB_LOG_INFO("client_connection::disconnect attempts to disconnect\n");
         //! close connection
         client_->disconnect();
-        std::cout << "client_connection::disconnect disconnected" << std::endl;
+        TB_LOG_INFO("client_connection::disconnect disconnected\n");
     }
 
     bool client_connection::is_connected(void) const {
@@ -58,55 +59,39 @@ namespace tsp_client {
 
     client_connection &client_connection::send(std::vector<uint8_t> &&request) {
         std::lock_guard<std::mutex> lock(buffer_mutex_);
-
-        std::cout << "tsp_client_::send attempts to send request" << std::endl;
-
-        //client_tcp_iface::write_request request = {std::vector<char>{buffer.begin(), buffer.end()}, nullptr};
+        TB_LOG_INFO("tsp_client_::send attempts to send request\n");
         client_->send(std::move(request));
-
-        std::cout << "client_connection::send end to sent request";
-
+        TB_LOG_INFO("client_connection::send end to sent request\n");
         return *this;
     }
 
     void client_connection::call_disconnection_handler(void) {
         if (disconnection_handler_) {
-            std::cout << "client_connection::call_disconnection_handler calls disconnection handler" << std::endl;
+            TB_LOG_INFO("client_connection::call_disconnection_handler calls disconnection handler\n");
             disconnection_handler_(*this);
         }
     }
 
-    void client_connection::tcp_client_receive_handler(const std::vector<uint8_t> &response) {
-
+    bool client_connection::tcp_client_receive_handler(const std::vector<uint8_t> &response) {
         try {
-            std::cout << "client_connection::connection tcp_client_receive_handler packet, "
-                         "attempts to build reply" << std::endl;
-            // TODO parse packet
-            //m_builder << std::string(result.buffer.begin(), result.buffer.end());
+            TB_LOG_INFO("client_connection::connection tcp_client_receive_handler packet, "
+                        "attempts to parse response\n");
+            if(reply_callback_ != nullptr) {
+                reply_callback_(*this, response);
+            }
+
+            return true;
         }
         catch (const std::exception &e) {
-            std::cout << "tsp_client_::connection could not build reply (invalid format), "
-                         "disconnecting," << e.what() << std::endl;
+            TB_LOG_INFO("tsp_client_::connection could not parse packet (invalid format), "
+                        "disconnecting:%s\n", e.what());
             call_disconnection_handler();
-            return;
+            return false;
         }
-        reply_callback_(*this, response);
-        /*
-        while(m_builder.reply_available()) {
-            std::cout << "tsp_client_::connection reply fully built";
-
-            auto reply = m_builder.get_front();
-            m_builder.pop_front();
-
-            if (m_reply_callback) {
-                std::cout << "tsp_client_::connection executes reply callback";
-                m_reply_callback(*this, reply);
-            }
-        }*/
     }
 
     void client_connection::tcp_client_disconnection_handler(void) {
-        std::cout << "tsp_client::connection has been disconnected" << std::endl;
+        TB_LOG_INFO("tsp_client::connection has been disconnected\n");
         //! call disconnection handler
         call_disconnection_handler();
     }

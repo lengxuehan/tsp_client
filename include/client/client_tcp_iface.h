@@ -70,11 +70,29 @@ namespace tsp_client {
         //!
         typedef std::function<uint32_t(const uint8_t *, uint32_t)> package_header_handler_t;
         //!
-        //! set on message header parse handler
+        //! set on message header parse handler to get remain bytes to read
         //!
         //! \param header_handler handler to be called in case of parsing message header
         //!
         virtual void set_message_header_handler(const package_header_handler_t &header_handler) = 0;
+
+        //!
+        //! set message header size
+        //!
+        //! \param size set size of message header
+        //!
+        virtual void set_message_header_size(uint8_t size) = 0;
+
+        //!
+        //! package header handler
+        //!
+        typedef std::function<bool(const std::vector<uint8_t> &)> package_handler_t;
+        //!
+        //! et on message parse handler to deal with package
+        //!
+        //! \param header_handler handler to be called in case of parsing package
+        //!
+        virtual void set_message_handler(const package_handler_t &package_handler) = 0;
     protected:
         const ssl_config& ssl_cfg_;
     };

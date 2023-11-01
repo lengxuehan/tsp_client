@@ -86,7 +86,7 @@ namespace tsp_client {
         //!
         //! \param result read result
         //!
-        void tcp_client_receive_handler(const std::vector<uint8_t> &response);
+        bool tcp_client_receive_handler(const std::vector<uint8_t> &response);
 
         //!
         //! tcp_client disconnection handler

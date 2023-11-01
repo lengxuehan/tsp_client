@@ -31,38 +31,52 @@ namespace tsp_client {
         //! \param addr host to be connected to
         //! \param port port to be connected to
         //!
-        bool connect(const std::string &addr, std::uint32_t port);
+        bool connect(const std::string &addr, std::uint32_t port) override;
 
         //!
         //! stop the tcp client
         //!
         //! \param wait_for_removal when sets to true, disconnect blocks until the underlying TCP client has been effectively removed from the io_service and that all the underlying callbacks have completed.
         //!
-        void disconnect();
+        void disconnect() override;
 
         //!
         //! \return whether the client is currently connected or not
         //!
-        bool is_connected(void) const;
+        bool is_connected(void) const override;
 
         //! Send tcp request
         //! \return whether the client is currently sent or not
         //!
-        bool send(std::vector<uint8_t> &&request);
+        bool send(std::vector<uint8_t> &&request) override;
 
         //!
         //! set on disconnection handler
         //!
         //! \param disconnection_handler handler to be called in case of a disconnection
         //!
-        void set_on_disconnection_handler(const disconnection_handler_t &disconnection_handler);
+        void set_on_disconnection_handler(const disconnection_handler_t &disconnection_handler) override;
 
         //!
-        //! set on message header parse handler
+        //! set on message header parse handler to get remain bytes to read
         //!
         //! \param header_handler handler to be called in case of parsing message header
         //!
         void set_message_header_handler(const package_header_handler_t &header_handler) override;
+
+        //!
+        //! set message header size
+        //!
+        //! \param size set size of message header
+        //!
+        void set_message_header_size(uint8_t size) override;
+
+        //!
+        //! set on message parse handler to deal with package
+        //!
+        //! \param package_handler handler to be called in case of parsing package
+        //!
+        void set_message_handler(const package_handler_t &package_handler) override;
     private:
         //!
         //! tcp client for tsp
@@ -76,6 +90,7 @@ namespace tsp_client {
         //! tcp client connected or not
         //!
         bool  connected_{false};
+        package_handler_t package_handler_{nullptr};
     };
 
 } // namespace network
