@@ -13,6 +13,15 @@
 namespace boost_support {
 namespace socket {
 namespace tcp {
+    struct tls_config{
+        std::string str_ca_path{};
+        std::string str_client_key_path{};
+        std::string str_client_crt_path{};
+        bool support_tls{false};
+        uint8_t message_header_size{0};
+        uint8_t body_length_index{29};
+        uint8_t body_length_size{2};
+    };
     // tcp message type
     class TcpMessageType {
     public:

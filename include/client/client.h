@@ -47,7 +47,7 @@ namespace tsp_client {
 
     public:
         //! ctor
-        client(const ssl_config& ssl_cfg);
+        client(const tls_tcp_config& tls_tcp_cfg);
 
         //! dtor
         ~client(void);

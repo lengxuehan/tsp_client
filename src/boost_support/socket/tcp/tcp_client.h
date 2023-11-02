@@ -17,7 +17,6 @@
 namespace boost_support {
 namespace socket {
 namespace tcp {
-    using ssl_config = tsp_client::ssl_config;
     /*
     @ Class Name        : Create Tcp Socket
     @ Class Description : Class used to create a tcp socket for handling transmission
@@ -35,12 +34,10 @@ namespace tcp {
         using TcpErrorCodeType = boost::system::error_code;
         // Tcp function template used for reception
         using TcpHandlerRead = std::function<void(TcpMessagePtr)>;
-        // Tcp function template used for parse header
-        typedef std::function<uint32_t(const uint8_t *, uint32_t)> PackHeaderHandle;
 
     public:
         //ctor
-        CreateTcpClientSocket(std::string local_ip_address, uint16_t local_port_num, const ssl_config& ssl_cfg,
+        CreateTcpClientSocket(std::string local_ip_address, uint16_t local_port_num, const tls_config& tls_cfg,
                               TcpHandlerRead &&tcp_handler_read);
 
         //dtor
@@ -48,12 +45,6 @@ namespace tcp {
 
         // Function to Open the socket
         bool open();
-
-        // Set tcp function to parse message header
-        void set(const PackHeaderHandle &handle);
-
-        // Set tcp message header size
-        void set_message_header_size(uint8_t size);
 
         // Function to Connect to host
         bool connect_to_host(const std::string& host_ip_address, uint16_t host_port_num);
@@ -94,10 +85,8 @@ namespace tcp {
         std::mutex mutex_;
         // Handler invoked during read operation
         TcpHandlerRead tcp_handler_read_;
-        // Support tls
-        bool support_tls_{false};
-        PackHeaderHandle		handle_header_{nullptr};
-        uint8_t                 message_header_size_{0U};
+        // tls config
+        tls_config tls_cfg_;
     };
 }  // namespace tcp
 }  // namespace socket

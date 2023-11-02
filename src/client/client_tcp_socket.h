@@ -19,7 +19,7 @@ namespace tsp_client {
     class client_tcp_socket : public client_tcp_iface {
     public:
         //! ctor
-        client_tcp_socket(const ssl_config& ssl_cfg):client_tcp_iface(ssl_cfg){};
+        client_tcp_socket(const tls_tcp_config& ssl_cfg):client_tcp_iface(ssl_cfg){};
 
         //! dtor
         ~client_tcp_socket(void) = default;
@@ -56,20 +56,6 @@ namespace tsp_client {
         //! \param disconnection_handler handler to be called in case of a disconnection
         //!
         void set_on_disconnection_handler(const disconnection_handler_t &disconnection_handler) override;
-
-        //!
-        //! set on message header parse handler to get remain bytes to read
-        //!
-        //! \param header_handler handler to be called in case of parsing message header
-        //!
-        void set_message_header_handler(const package_header_handler_t &header_handler) override;
-
-        //!
-        //! set message header size
-        //!
-        //! \param size set size of message header
-        //!
-        void set_message_header_size(uint8_t size) override;
 
         //!
         //! set on message parse handler to deal with package

@@ -1,4 +1,4 @@
-#include "include/packages/messages.h"
+#include "messages.h"
 #include "packet.h"
 
 namespace tsp_client {

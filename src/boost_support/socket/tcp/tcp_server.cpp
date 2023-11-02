@@ -16,11 +16,11 @@ namespace tcp {
     using TcpErrorCodeType = boost::system::error_code;
 
     CreateTcpServerSocket::CreateTcpServerSocket(std::string local_ip_address, const uint16_t local_port_num,
-                                                 const ssl_config& ssl_cfg)
+                                                 const tls_config& tls_cfg)
             : local_ip_address_{std::move(local_ip_address)},
               local_port_num_{local_port_num},
-              ssl_cfg_{ssl_cfg} {
-        if(ssl_cfg.support_tls){
+              tls_cfg_{tls_cfg} {
+        if(tls_cfg_.support_tls){
             // Create accepter
             tcp_acceptor_ = std::make_unique<TcpAcceptor>(io_context_,
                                                           Tcp::endpoint(Tcp::v4(), local_port_num_), true);
@@ -28,11 +28,11 @@ namespace tcp {
             using namespace boost::asio::ssl;
             //TODO fixme, just for a example
             ssl_context_.use_tmp_dh_file("/mnt/d/work/tsp_client/demo/etc/server/dh2048.pem");
-            ssl_context_.load_verify_file(ssl_cfg.str_ca_path);
+            ssl_context_.load_verify_file(tls_cfg_.str_ca_path);
             ssl_context_.set_options(context::verify_peer | context::single_dh_use);
             ssl_context_.set_verify_mode(verify_peer); //
-            ssl_context_.use_certificate_file(ssl_cfg.str_client_crt_path, context::pem);
-            ssl_context_.use_private_key_file(ssl_cfg.str_client_key_path, context::pem);
+            ssl_context_.use_certificate_file(tls_cfg_.str_client_crt_path, context::pem);
+            ssl_context_.use_private_key_file(tls_cfg_.str_client_key_path, context::pem);
         }else{
             // Create accepter
             tcp_acceptor_ = std::make_unique<TcpAcceptor>(io_context_,
@@ -61,7 +61,7 @@ namespace tcp {
             TcpHandlerRead &&tcp_handler_read) {
         TcpErrorCodeType ec;
         Tcp::endpoint endpoint{};
-        if(ssl_cfg_.support_tls){
+        if(tls_cfg_.support_tls){
             CreateTcpServerSocket::TcpServerConnection tcp_connection{io_context_, ssl_context_,
                                                                       std::move(tcp_handler_read)};
 

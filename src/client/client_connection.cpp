@@ -5,8 +5,8 @@
 
 namespace tsp_client {
 
-    client_connection::client_connection(const ssl_config& ssl_cfg)
-            : client_(std::make_shared<client_tcp_socket>(ssl_cfg)){
+    client_connection::client_connection(const tls_tcp_config& tls_tcp_cfg)
+            : client_(std::make_shared<client_tcp_socket>(tls_tcp_cfg)){
     }
 
     client_connection::~client_connection(void) {
@@ -26,8 +26,6 @@ namespace tsp_client {
             client_->set_on_disconnection_handler(
                     std::bind(&client_connection::tcp_client_disconnection_handler, this));
             if(res) {
-                client_->set_message_header_handler(PackHelper::parse_message_header);
-                client_->set_message_header_size(PackHelper::get_message_header_size());
                 client_->set_message_handler([this](const std::vector<uint8_t> &data)->bool {
                     return this->tcp_client_receive_handler(data);
                 });

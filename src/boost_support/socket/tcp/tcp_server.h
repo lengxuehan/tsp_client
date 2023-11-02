@@ -11,13 +11,11 @@
 #include <boost/asio.hpp>
 #include <vector>
 #include "tcp_types.h"
-#include "client/client_tcp_iface.h"
 #include <boost/asio/ssl.hpp>
 
 namespace boost_support {
 namespace socket {
 namespace tcp {
-    using ssl_config = tsp_client::ssl_config;
     // type alias for tcp socket
     using Tcp = boost::asio::ip::tcp;
     using TcpSocket = Tcp::socket;
@@ -86,7 +84,7 @@ namespace tcp {
         using TcpAcceptor = boost::asio::ip::tcp::acceptor;
 
         // ctor
-        CreateTcpServerSocket(std::string local_ip_address, uint16_t local_port_num, const ssl_config& ssl_cfg);
+        CreateTcpServerSocket(std::string local_ip_address, uint16_t local_port_num, const tls_config& ssl_cfg);
 
         // dtor
         ~CreateTcpServerSocket() = default;
@@ -106,7 +104,7 @@ namespace tcp {
         // boost io context
         boost::asio::io_context io_context_;
         boost::asio::ssl::context ssl_context_{boost::asio::ssl::context::tlsv12};
-        const ssl_config& ssl_cfg_;
+        const tls_config& tls_cfg_;
         // Support tls
         bool support_tls_{false};
     };

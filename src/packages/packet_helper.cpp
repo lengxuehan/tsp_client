@@ -1,5 +1,5 @@
 #include "packet_helper.h"
-#include "include/packages/messages.h"
+#include "messages.h"
 
 namespace tsp_client {
 

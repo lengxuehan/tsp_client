@@ -8,8 +8,16 @@ namespace tsp_client {
         if(tcp_socket_ == nullptr){
             // TODO fixme
             std::string local_ip_address{"127.0.0.1"};
+            boost_support::socket::tcp::tls_config tls_cfg;
+            tls_cfg.str_ca_path = tls_tcp_cfg_.str_ca_path;
+            tls_cfg.str_client_key_path = tls_tcp_cfg_.str_client_key_path;
+            tls_cfg.str_client_crt_path = tls_tcp_cfg_.str_client_crt_path;
+            tls_cfg.support_tls = tls_tcp_cfg_.support_tls;
+            tls_cfg.message_header_size = tls_tcp_cfg_.message_header_size;
+            tls_cfg.body_length_index = tls_tcp_cfg_.body_length_index;
+            tls_cfg.body_length_size = tls_tcp_cfg_.body_length_size;
             tcp_socket_ = std::make_unique<TcpSocket>(
-                    local_ip_address, 0U, ssl_cfg_,
+                    local_ip_address, 0U, tls_cfg,
                     [this](TcpMessagePtr prt) -> void {
                         TB_LOG_INFO("client_tcp_socket::connect recv tcp message from tsp data size:%d\n",
                                     prt->rxBuffer_.size());
@@ -48,18 +56,6 @@ namespace tsp_client {
 
     void client_tcp_socket::set_on_disconnection_handler(const disconnection_handler_t &disconnection_handler) {
         disconnection_handler_ = disconnection_handler;
-    }
-
-    void client_tcp_socket::set_message_header_handler(const package_header_handler_t &header_handler) {
-        if(tcp_socket_ != nullptr) {
-            tcp_socket_->set(header_handler);
-        }
-    }
-
-    void client_tcp_socket::set_message_header_size(uint8_t size) {
-        if(tcp_socket_ != nullptr) {
-            tcp_socket_->set_message_header_size(size);
-        }
     }
 
     void client_tcp_socket::set_message_handler(const package_handler_t &package_handler) {

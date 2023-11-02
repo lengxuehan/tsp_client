@@ -14,16 +14,21 @@
 #include <vector>
 
 namespace tsp_client {
-    struct ssl_config{
+    struct tls_tcp_config{
+        std::string server_ip;
+        uint16_t port{8888};
         std::string str_ca_path{};
         std::string str_client_key_path{};
         std::string str_client_crt_path{};
         bool support_tls{false};
+        uint8_t message_header_size{30};
+        uint8_t body_length_index{29};
+        uint8_t body_length_size{2};
     };
     class client_tcp_iface {
     public:
         //! ctor
-        client_tcp_iface(const ssl_config& ssl_cfg): ssl_cfg_{ssl_cfg}{};
+        client_tcp_iface(const tls_tcp_config& ssl_cfg): tls_tcp_cfg_{ssl_cfg}{};
 
         //! dtor
         virtual ~client_tcp_iface(void) = default;
@@ -68,24 +73,6 @@ namespace tsp_client {
         //!
         //! package header handler
         //!
-        typedef std::function<uint32_t(const uint8_t *, uint32_t)> package_header_handler_t;
-        //!
-        //! set on message header parse handler to get remain bytes to read
-        //!
-        //! \param header_handler handler to be called in case of parsing message header
-        //!
-        virtual void set_message_header_handler(const package_header_handler_t &header_handler) = 0;
-
-        //!
-        //! set message header size
-        //!
-        //! \param size set size of message header
-        //!
-        virtual void set_message_header_size(uint8_t size) = 0;
-
-        //!
-        //! package header handler
-        //!
         typedef std::function<bool(const std::vector<uint8_t> &)> package_handler_t;
         //!
         //! et on message parse handler to deal with package
@@ -94,7 +81,7 @@ namespace tsp_client {
         //!
         virtual void set_message_handler(const package_handler_t &package_handler) = 0;
     protected:
-        const ssl_config& ssl_cfg_;
+        const tls_tcp_config& tls_tcp_cfg_;
     };
 
 } // namespace tsp_client

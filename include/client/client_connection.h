@@ -19,7 +19,7 @@ namespace tsp_client {
     class client_connection {
     public:
         //! ctor
-        client_connection(const ssl_config& ssl_cfg);
+        client_connection(const tls_tcp_config& tls_tcp_cfg);
 
         //! dtor
         ~client_connection(void);
@@ -115,11 +115,6 @@ namespace tsp_client {
         //! disconnection handler whenever a disconnection occurred
         //!
         disconnection_handler_t disconnection_handler_;
-
-        //!
-        //! reply builder used to build replies
-        //! TODO
-        //builders::reply_builder builder_;
 
         //!
         //! protect internal buffer against race conditions

@@ -38,7 +38,7 @@ void signal_init_handler(int) {
 }
 int main() {
     std::cout << "Hello, World!" << std::endl;
-    tsp_client::ssl_config ssl_cfg{};
+    boost_support::socket::tcp::tls_config ssl_cfg{};
     ssl_cfg.support_tls = true;
     ssl_cfg.str_ca_path = "/mnt/d/work/tsp_client/demo/etc/server/ca.crt";
     ssl_cfg.str_client_key_path = "/mnt/d/work/tsp_client/demo/etc/server/server.key";

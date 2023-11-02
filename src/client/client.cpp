@@ -5,7 +5,7 @@
 
 namespace tsp_client {
 
-    client::client(const ssl_config& ssl_cfg)
+    client::client(const tls_tcp_config& ssl_cfg)
             :client_connection_(ssl_cfg) {
         TB_LOG_INFO("tsp::client created\n");
     }

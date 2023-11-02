@@ -12,7 +12,7 @@ void signal_init_handler(int) {
 }
 
 int main() {
-    using ssl_config = tsp_client::ssl_config;
+    using ssl_config = tsp_client::tls_tcp_config;
     std::cout << "Hello, World!" << std::endl;
 
     ssl_config ssl_cfg;

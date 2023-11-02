@@ -29,10 +29,10 @@ namespace tsp_client {
 
 #pragma pack(1)
     struct MessageHeader {
-        BYTE link_header;  // 消息头
-        WORD port_version; // 协议版本号
-        BYTE status_code;  // 状态(错误)码
-        BYTE ack_flag;     // 应答标识
+        BYTE link_header;   // 消息头
+        WORD port_version;  // 协议版本号
+        BYTE status_code;   // 状态(错误)码
+        BYTE ack_flag;      // 应答标识
         BYTE request_id[6]; // 请求ID号
         BYTE tuid[16];      // 终端ID号
         BYTE encrypt_flag;  // 加密标识 0:表示采用无加密; 1:表示使用128bitAES对MessageBody明文内容进行加密
