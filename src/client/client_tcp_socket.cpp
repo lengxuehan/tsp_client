@@ -7,7 +7,7 @@ namespace tsp_client {
     bool client_tcp_socket::connect(const std::string &addr, std::uint32_t port) {
         if(tcp_socket_ == nullptr){
             // TODO fixme
-            std::string local_ip_address{"127.0.0.1"};
+            std::string local_ip_address{"0.0.0.0"};
             boost_support::socket::tcp::tls_config tls_cfg;
             tls_cfg.str_ca_path = tls_tcp_cfg_.str_ca_path;
             tls_cfg.str_client_key_path = tls_tcp_cfg_.str_client_key_path;

@@ -16,7 +16,7 @@ namespace tcp {
     using TcpErrorCodeType = boost::system::error_code;
 
     CreateTcpServerSocket::CreateTcpServerSocket(std::string local_ip_address, const uint16_t local_port_num,
-                                                 const tls_config& tls_cfg)
+                                                 const tls_config& tls_cfg, const std::string& str_dh_file)
             : local_ip_address_{std::move(local_ip_address)},
               local_port_num_{local_port_num},
               tls_cfg_{tls_cfg} {
@@ -27,7 +27,7 @@ namespace tcp {
             TB_LOG_INFO("Tcp Socket Acceptor created at <%s, %d>\n", local_ip_address_.c_str(), local_port_num_);
             using namespace boost::asio::ssl;
             //TODO fixme, just for a example
-            ssl_context_.use_tmp_dh_file("/mnt/d/work/tsp_client/demo/etc/server/dh2048.pem");
+            ssl_context_.use_tmp_dh_file(str_dh_file);
             ssl_context_.load_verify_file(tls_cfg_.str_ca_path);
             ssl_context_.set_options(context::verify_peer | context::single_dh_use);
             ssl_context_.set_verify_mode(verify_peer); //

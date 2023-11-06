@@ -37,17 +37,19 @@ void signal_init_handler(int) {
     cv.notify_all();
 }
 int main() {
+    std::string host_dir{"/mnt/e/learn/cpps/CppServer/tools/certificates"}; // /mnt/d/work/tsp_client/demo/etc/server
     std::cout << "Hello, World!" << std::endl;
     boost_support::socket::tcp::tls_config ssl_cfg{};
     ssl_cfg.support_tls = true;
-    ssl_cfg.str_ca_path = "/mnt/d/work/tsp_client/demo/etc/server/ca.crt";
-    ssl_cfg.str_client_key_path = "/mnt/d/work/tsp_client/demo/etc/server/server.key";
-    ssl_cfg.str_client_crt_path = "/mnt/d/work/tsp_client/demo/etc/server/server.crt";
-    boost_support::socket::tcp::CreateTcpServerSocket server_socket("127.0.0.1", 8888, ssl_cfg);
+    ssl_cfg.str_ca_path = host_dir + "/ca.crt";
+    ssl_cfg.str_client_key_path = host_dir + "/server.key";
+    ssl_cfg.str_client_crt_path = host_dir + "/server.crt";
+    std::string str_dh_file = host_dir + "/dh2048.pem";
+    boost_support::socket::tcp::CreateTcpServerSocket server_socket("127.0.0.1", 8888, ssl_cfg, str_dh_file);
     std::vector<TcpServerConnection> connections;
     while (running) {
         boost_support::socket::tcp::CreateTcpServerSocket::TcpServerConnection&& connection
-        = server_socket.get_tcp_server_connection([&](const TcpMessagePtr &res) {
+            = server_socket.get_tcp_server_connection([&](const TcpMessagePtr &res) {
                     on_new_message(connections, res);
                 });
         connection.set_message_header_size(tsp_client::PackHelper::get_message_header_size());

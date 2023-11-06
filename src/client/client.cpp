@@ -1,7 +1,6 @@
 #include "include/client/client.h"
 #include <iostream>
 #include "tb_log.h"
-#include "packages/messages.h"
 
 namespace tsp_client {
 
@@ -27,6 +26,7 @@ namespace tsp_client {
     void client::connect(
             const std::string &host, std::size_t port,
             const connect_callback_t &connect_callback,
+            const reply_callback_t &reply_callback,
             std::uint32_t timeout_msecs,
             std::int32_t max_reconnects,
             std::uint32_t reconnect_interval_msecs) {
@@ -36,6 +36,7 @@ namespace tsp_client {
         server_ip_ = host;
         server_port_ = port;
         connect_callback_ = connect_callback;
+        reply_callback_ = reply_callback;
         max_reconnects_ = max_reconnects;
         reconnect_interval_msecs_ = reconnect_interval_msecs;
 
@@ -170,13 +171,9 @@ namespace tsp_client {
     }
 
     void client::handle_message(const std::vector<uint8_t> &message){
-        MessageHeader header;
-        if (header.parse(message)) {
-            TB_LOG_INFO("client::handle_message parse message successful, status:%d, request_id:%s\n",
-                        header.status_code, header.request_id);
-        } else {
-            TB_LOG_INFO("client::handle_message parse message failed. message:%s",
-                        message.data());
+        TB_LOG_INFO("client::handle_message size:%d\n", message.size());
+        if(reply_callback_ != nullptr) {
+            reply_callback_(message);
         }
     }
 
@@ -278,7 +275,7 @@ namespace tsp_client {
 
         //! Try catch block because the redis client throws an error if connection cannot be made.
         try {
-            connect(server_ip_, server_port_, connect_callback_, connect_timeout_msecs_, max_reconnects_,
+            connect(server_ip_, server_port_, connect_callback_, reply_callback_, connect_timeout_msecs_, max_reconnects_,
                     reconnect_interval_msecs_);
         }
         catch (...) {

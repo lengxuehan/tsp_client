@@ -60,6 +60,11 @@ namespace tsp_client {
 
     public:
         //!
+        //! reply callback called whenever a reply is received
+        //! takes as parameter the received reply
+        //!
+        typedef std::function<void(const std::vector<uint8_t> &)> reply_callback_t;
+        //!
         //! connect handler, called whenever a new connection even occurred
         //!
         typedef std::function<void(const std::string &host, std::size_t port, connect_state status)> connect_callback_t;
@@ -78,6 +83,7 @@ namespace tsp_client {
                 const std::string &host = "127.0.0.1",
                 std::size_t port = 8888,
                 const connect_callback_t &connect_callback = nullptr,
+                const reply_callback_t &reply_callback = nullptr,
                 std::uint32_t timeout_msecs = 0,
                 std::int32_t max_reconnects = 0,
                 std::uint32_t reconnect_interval_msecs = 0);
@@ -103,12 +109,6 @@ namespace tsp_client {
         void cancel_reconnect(void);
 
     public:
-        //!
-        //! reply callback called whenever a reply is received
-        //! takes as parameter the received reply
-        //!
-        typedef std::function<void(const std::vector<uint8_t> &)> reply_callback_t;
-
         //!
         //! send the given command
         //! the command is actually pipelined and only buffered, so nothing is sent to the network
@@ -258,6 +258,11 @@ namespace tsp_client {
         //! user defined connect status callback
         //!
         connect_callback_t connect_callback_;
+
+        //!
+        //! user defined reply callback
+        //!
+        reply_callback_t reply_callback_;
 
         //!
         //!  callbacks thread safety

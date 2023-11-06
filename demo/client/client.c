@@ -4,6 +4,7 @@
 #include "client/client.h"
 #include "client/client_tcp_iface.h"
 #include "packages/messages.h"
+#include "tb_log.h"
 
 std::condition_variable cv;
 
@@ -14,12 +15,13 @@ void signal_init_handler(int) {
 int main() {
     using ssl_config = tsp_client::tls_tcp_config;
     std::cout << "Hello, World!" << std::endl;
+    std::string host_dir{"/mnt/e/learn/cpps/CppServer/tools/certificates"}; // /mnt/d/work/tsp_client/demo/etc/client
 
     ssl_config ssl_cfg;
     ssl_cfg.support_tls = true;
-    ssl_cfg.str_ca_path = "/mnt/d/work/tsp_client/demo/etc/client/ca.crt";
-    ssl_cfg.str_client_key_path = "/mnt/d/work/tsp_client/demo/etc/client/client.key";
-    ssl_cfg.str_client_crt_path = "/mnt/d/work/tsp_client/demo/etc/client/client.crt";
+    ssl_cfg.str_ca_path = host_dir + "/ca.crt";
+    ssl_cfg.str_client_key_path = host_dir + "/client.key";
+    ssl_cfg.str_client_crt_path = host_dir + "/client.crt";
     tsp_client::client client(ssl_cfg);
     client.connect("127.0.0.1", 8888, [](const std::string& host, std::size_t port, tsp_client::client::connect_state status) {
         if (status == tsp_client::client::connect_state::ok) {
@@ -27,6 +29,16 @@ int main() {
         }
         if (status == tsp_client::client::connect_state::failed) {
             std::cout << "client failed to connect from " << host << ":" << port << std::endl;
+        }
+    },
+    [](const std::vector<uint8_t>& message){
+        tsp_client::MessageHeader header;
+        if (header.parse(message)) {
+            TB_LOG_INFO("client::handle_message parse message successful, status:%d, request_id:%s\n",
+                        header.status_code, header.request_id);
+        } else {
+            TB_LOG_INFO("client::handle_message parse message failed. message:%s",
+                        message.data());
         }
     });
 

@@ -84,7 +84,8 @@ namespace tcp {
         using TcpAcceptor = boost::asio::ip::tcp::acceptor;
 
         // ctor
-        CreateTcpServerSocket(std::string local_ip_address, uint16_t local_port_num, const tls_config& ssl_cfg);
+        CreateTcpServerSocket(std::string local_ip_address, uint16_t local_port_num, const tls_config& ssl_cfg,
+                              const std::string& str_dh_file);
 
         // dtor
         ~CreateTcpServerSocket() = default;
