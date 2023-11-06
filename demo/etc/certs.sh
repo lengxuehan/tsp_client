@@ -41,4 +41,4 @@ mv server.* ./server
 #mv dh2048.pem ./server/
 
 #验证证书合法性
-#openssl s_client -connect kr-i-dev.jenhoo.cn:4430 -CAfile trustchain.pem -cert Dummy_CDC_DummyVehicle_dev.crt -key Dummy_CDC_DummyVehicle_dev.key
+#openssl s_client -connect 127.0.0.1:8888 -CAfile /data/wtxu/etc/client/ca.crt -cert /data/wtxu/etc/client/client.crt -key /data/wtxu/etc/client/client.key
