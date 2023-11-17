@@ -28,10 +28,11 @@ file(GLOB_RECURSE BOOST_SUPPORT_SRCS_TCP "${CMAKE_CURRENT_SOURCE_DIR}/src/boost_
 file(GLOB_RECURSE BOOST_SUPPORT_SRCS_UDP "${CMAKE_CURRENT_SOURCE_DIR}/src/boost_support/socket/udp/*.cpp")
 file(GLOB_RECURSE SRCS_COMMON "${CMAKE_CURRENT_SOURCE_DIR}/src/common/*.cpp")
 file(GLOB_RECURSE SRCS_CLIENT "${CMAKE_CURRENT_SOURCE_DIR}/src/client/*.cpp")
-file(GLOB_RECURSE SRCS_NLOHMANN "${CMAKE_CURRENT_SOURCE_DIR}/src/nlohmann/*.cpp")
+file(GLOB_RECURSE SRCS_TINYXML2 "${CMAKE_CURRENT_SOURCE_DIR}/src/tinyxml2/*.cpp")
 file(GLOB_RECURSE SRCS_TRANSPORT "${CMAKE_CURRENT_SOURCE_DIR}/src/transport/*.cpp")
 file(GLOB_RECURSE SRCS_UTILITY "${CMAKE_CURRENT_SOURCE_DIR}/src/utility/*.cpp")
 file(GLOB_RECURSE SRCS_MESSAGES "${CMAKE_CURRENT_SOURCE_DIR}/src/packages/*.cpp")
+file(GLOB_RECURSE SRCS_HTTP_CLIENT "${CMAKE_CURRENT_SOURCE_DIR}/src/http_client/*.cpp")
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/
@@ -45,10 +46,11 @@ add_library(${PROJECT_NAME} SHARED
         ${BOOST_SUPPORT_SRCS_UDP}
         ${SRCS_COMMON}
         ${SRCS_CLIENT}
-        ${SRCS_NLOHMANN}
+        ${SRCS_TINYXML2}
         ${SRCS_TRANSPORT}
         ${SRCS_UTILITY}
         ${SRCS_MESSAGES}
+        ${SRCS_HTTP_CLIENT}
         )
 
 # set dynamic libray output path
@@ -59,6 +61,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         Threads::Threads
         ssl
         crypto
+        curl
         )
 
 add_subdirectory(demo/server)
+add_subdirectory(demo/http_client)
