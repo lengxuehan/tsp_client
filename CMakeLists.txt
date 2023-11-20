@@ -33,6 +33,7 @@ file(GLOB_RECURSE SRCS_TRANSPORT "${CMAKE_CURRENT_SOURCE_DIR}/src/transport/*.cp
 file(GLOB_RECURSE SRCS_UTILITY "${CMAKE_CURRENT_SOURCE_DIR}/src/utility/*.cpp")
 file(GLOB_RECURSE SRCS_MESSAGES "${CMAKE_CURRENT_SOURCE_DIR}/src/packages/*.cpp")
 file(GLOB_RECURSE SRCS_HTTP_CLIENT "${CMAKE_CURRENT_SOURCE_DIR}/src/http_client/*.cpp")
+file(GLOB_RECURSE SRCS_SHM_MAP "${CMAKE_CURRENT_SOURCE_DIR}/src/shm_map/*.c")
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/
@@ -51,6 +52,7 @@ add_library(${PROJECT_NAME} SHARED
         ${SRCS_UTILITY}
         ${SRCS_MESSAGES}
         ${SRCS_HTTP_CLIENT}
+        ${SRCS_SHM_MAP}
         )
 
 # set dynamic libray output path
@@ -62,7 +64,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         ssl
         crypto
         curl
+        rt
         )
 
 add_subdirectory(demo/server)
 add_subdirectory(demo/http_client)
+add_subdirectory(demo/shm_map)
