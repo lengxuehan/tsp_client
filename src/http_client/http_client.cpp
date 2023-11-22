@@ -1,6 +1,7 @@
 #include <memory>
 #include <curl/curl.h>
 #include <thread>
+#include <sstream>
 #include "http_client/http_client.h"
 
 using namespace http_client;
@@ -198,6 +199,9 @@ void HttpClient::process_response(const RequestPtr &request, ResponsePtr &respon
         case HttpRequest::Type::PUT:
             doPut(request, response);
             break;
+        case HttpRequest::Type::DOWNLOAD:
+            doDownload(request, response);
+            break;
         case HttpRequest::Type::DELETE:
             doPut(request, response);
             break;
@@ -296,6 +300,47 @@ void HttpClient::doPut(const RequestPtr &request, ResponsePtr &response) {
     }
 
     if (fp) fclose(fp);
+}
+
+void HttpClient::doDownload(const RequestPtr &request, ResponsePtr &response) {
+    auto responseData = response->getResponseData();
+    auto responseHeader = response->getResponseHeader();
+    char errorBuf[kErrorBufSize] = {0};
+    auto requestData = request->getRequestData();
+    auto requestDataSize = request->getRequestDataSize();
+    long responseCode = -1;
+
+    auto path = request->getDownloadFilePath();
+    FILE * file_to_be_written = fopen(path.c_str(), "w");
+    if (file_to_be_written == nullptr) {
+        return;
+    }
+    std::vector<char> vec_stream;
+    Curl curl;
+    curl.init(*this, request, responseData, responseHeader, errorBuf);
+    curl.setOption(CURLOPT_WRITEFUNCTION, writeCallback);
+    curl.setOption(CURLOPT_WRITEDATA, &vec_stream);
+
+    bool ok = curl.perform(&responseCode);
+
+    response->setResponseCode(responseCode);
+    if (ok) {
+        response->setSucceed(true);
+        size_t nlen = fwrite(vec_stream.data(), vec_stream.size(), vec_stream.size(), file_to_be_written);
+        if (vec_stream.size() != nlen){
+            std::stringstream ss;
+            ss << "download_to_file fwrite size: " << vec_stream.size() << " written len: " << nlen << " error:" << errno;
+            snprintf(errorBuf, kErrorBufSize, "%s\n", ss.str().c_str());
+            response->setSucceed(false);
+        }
+    } else {
+        response->setSucceed(false);
+        response->setErrorBuffer(errorBuf);
+    }
+
+    if (file_to_be_written){
+        fclose(file_to_be_written);
+    }
 }
 
 void HttpClient::doDelete(const RequestPtr &request, ResponsePtr &response) {

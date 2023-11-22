@@ -14,10 +14,6 @@ namespace http_client {
 
     using RequestCallback = std::function<void(const std::shared_ptr<HttpRequest> &,
                                                const std::shared_ptr<HttpResponse> &)>;
-#ifdef DELETE
-#undef DELETE
-#endif
-
     class HttpRequest {
     public:
         enum class Type {
@@ -25,6 +21,7 @@ namespace http_client {
             POST,
             PUT,
             DELETE,
+            DOWNLOAD,
             UNKNOWN
         };
 
@@ -83,6 +80,18 @@ namespace http_client {
             uploadFilePath_ = std::move(path);
         }
 
+        void setDownloadFilePath(const std::string &path) {
+            downloadFilePath_ = path;
+        }
+
+        void setDownloadFilePath(std::string &&path) {
+            downloadFilePath_ = std::move(path);
+        }
+
+        const std::string &getDownloadFilePath() const {
+            return downloadFilePath_;
+        }
+
         const std::string &getUploadFilePath() const {
             return uploadFilePath_;
         }
@@ -139,7 +148,8 @@ namespace http_client {
         std::shared_ptr<void> pUserData_;
         RequestCallback callback_;
         std::vector<std::string> headers_;
-        std::string uploadFilePath_;
+        std::string uploadFilePath_{};
+        std::string downloadFilePath_{};
     };
 
 }

@@ -60,6 +60,8 @@ namespace http_client {
 
         void doPut(const RequestPtr &request, ResponsePtr &response);
 
+        void doDownload(const RequestPtr &request, ResponsePtr &response);
+
         void doDelete(const RequestPtr &request, ResponsePtr &response);
 
     private:

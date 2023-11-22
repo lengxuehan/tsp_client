@@ -10,6 +10,8 @@ using namespace http_client;
 using RequestPtr	= std::shared_ptr<http_client::HttpRequest>;
 using ResponsePtr	= std::shared_ptr<http_client::HttpResponse>;
 
+using namespace tinyxml2;
+
 void onMessage(const RequestPtr &request, const ResponsePtr &response) {
     std::cout << "\n" << request->getTag() << std::endl;
     if (response->isSucceed()) {
@@ -33,27 +35,72 @@ void signal_init_handler(int) {
     cv.notify_all();
 }
 
+std::string get_xml_string_value(const XMLElement* root, const std::string &key){
+    const XMLElement* xml_element = root->FirstChildElement(key.c_str());
+    std::string res{};
+    if(xml_element != nullptr){
+        const char* value = xml_element->GetText();
+        res = value;
+    }else{
+        std::cout << "HttpsProxy::get_xml_string_value get '%s' element failed\n" << key << std::endl;
+    }
+    return res;
+}
+
+std::string get_now() {
+    std::chrono::system_clock::time_point input = std::chrono::system_clock::now();
+    std::time_t tt = std::chrono::system_clock::to_time_t(input);
+    struct tm tm_now{};
+    struct tm *buf;
+    buf = localtime_r(&tt, &tm_now); //Locale time-zone
+    if (buf == nullptr){ // error
+        std::cout << "error which may be a runtime constraint violation or a failure to convert the specified time to local calendar time.";
+        return {};
+    }
+    std::stringstream ss;
+    //ss << std::put_time(&tm_now, "%Y%m%d%H%M%S");
+    ss << tm_now.tm_year + 1900;
+    ss << std::setw(2) << std::setfill('0') << tm_now.tm_mon + 1;
+    ss << std::setw(2) << std::setfill('0') << tm_now.tm_mday;
+    ss << std::setw(2) << std::setfill('0') << tm_now.tm_hour;
+    ss << std::setw(2) << std::setfill('0') << tm_now.tm_min;
+    ss << std::setw(2) << std::setfill('0') <<  tm_now.tm_sec;
+    return ss.str();
+}
+
+uint32_t get_xml_uint_value(const XMLElement* root, const std::string &key){
+    const XMLElement* xml_element = root->FirstChildElement(key.c_str());
+    uint32_t u{0U};
+    if(xml_element != nullptr){
+        XMLError error = xml_element->QueryUnsignedText(&u);
+        if(error != XMLError::XML_SUCCESS){
+            std::cout << "HttpsProxy::get_xml_uint_value get '%s' element failed\n" << key << std::endl;
+        }
+    }else{
+        std::cout << "HttpsProxy::get_xml_uint_value get '%s' element failed\n" << key << std::endl;
+    }
+    return u;
+}
+
 int main() {
     std::string host_dir{"/mnt/e/learn/cpps/CppServer/tools/certificates"}; // /mnt/d/work/tsp_client/demo/etc/server
     std::cout << "Hello, World!" << std::endl;
 
-    static const char* xml =
-            "<?xml version=\"1.0\"?>"
-            "<!DOCTYPE PLAY SYSTEM \"play.dtd\">"
-            "<PLAY>"
-            "<TITLE>A Midsummer Night's Dream</TITLE>"
-            "</PLAY>";
-    using namespace tinyxml2;
+    std::string str_now = get_now();
+
+    std::string str_xml = R"(<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <root>
+        <respStatus>OK</respStatus>
+        <serverDomain>apngw.changan.com.cn</serverDomain>
+        <serverDomainPort>443</serverDomainPort>
+        </root>)";
+
     XMLDocument doc;
-    doc.Parse( xml );
-
-    XMLElement* titleElement = doc.FirstChildElement( "PLAY" )->FirstChildElement( "TITLE" );
-    const char* title = titleElement->GetText();
-    printf( "Name of play (1): %s\n", title );
-
-    XMLText* textNode = titleElement->FirstChild()->ToText();
-    title = textNode->Value();
-    printf( "Name of play (2): %s\n", title );
+    doc.Parse(str_xml.c_str());
+    XMLElement* root = doc.FirstChildElement("root");
+    std::string str_resp_status = get_xml_string_value(root, "respStatus");
+    std::string str_server_domain = get_xml_string_value(root, "serverDomain");
+    uint16_t u_server_domain_port = (uint16_t)get_xml_uint_value(root, "serverDomainPort");
 
     boost_support::socket::tcp::tls_config ssl_cfg{};
     ssl_cfg.support_tls = true;
