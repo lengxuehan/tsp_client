@@ -61,4 +61,8 @@ namespace tsp_client {
     void client_tcp_socket::set_message_handler(const package_handler_t &package_handler) {
         package_handler_ = package_handler;
     }
+
+    void client_tcp_socket::is_addr_ip(const std::string &str_ip) {
+
+    }
 } // namespace tsp_client

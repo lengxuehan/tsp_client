@@ -45,7 +45,7 @@ int main() {
     ssl_cfg.str_client_key_path = host_dir + "/server.key";
     ssl_cfg.str_client_crt_path = host_dir + "/server.crt";
     std::string str_dh_file = host_dir + "/dh2048.pem";
-    boost_support::socket::tcp::CreateTcpServerSocket server_socket("127.0.0.1", 8888, ssl_cfg, str_dh_file);
+    boost_support::socket::tcp::CreateTcpServerSocket server_socket("localhost", 8888, ssl_cfg, str_dh_file);
     std::vector<TcpServerConnection> connections;
     while (running) {
         boost_support::socket::tcp::CreateTcpServerSocket::TcpServerConnection&& connection

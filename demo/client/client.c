@@ -23,7 +23,7 @@ int main() {
     ssl_cfg.str_client_key_path = host_dir + "/client.key";
     ssl_cfg.str_client_crt_path = host_dir + "/client.crt";
     tsp_client::client client(ssl_cfg);
-    client.connect("127.0.0.1", 8888, [](const std::string& host, std::size_t port, tsp_client::client::connect_state status) {
+    client.connect("localhost", 8888, [](const std::string& host, std::size_t port, tsp_client::client::connect_state status) {
         if (status == tsp_client::client::connect_state::ok) {
             std::cout << "client connected from " << host << ":" << port << std::endl;
         }

@@ -64,6 +64,7 @@ namespace tsp_client {
         //!
         void set_message_handler(const package_handler_t &package_handler) override;
     private:
+        void is_addr_ip(const std::string &str_ip);
         //!
         //! tcp client for tsp
         //!

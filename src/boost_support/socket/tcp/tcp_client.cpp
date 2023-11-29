@@ -126,11 +126,20 @@ namespace tcp {
     // connect to host
     bool CreateTcpClientSocket::connect_to_host(const std::string& host_ip_address, uint16_t host_port_num) {
         TcpErrorCodeType ec{};
+
+        using boost::asio::ip::tcp;
+        /* Resolve hostname. */
+        boost::asio::io_service io_service;
+        tcp::resolver resolver(io_service);
+        tcp::resolver::query query(tcp::v4(), host_ip_address, std::to_string(host_port_num));
+        tcp::resolver::iterator iterator = resolver.resolve(query);
+        Tcp::endpoint ep = *iterator;
+        TB_LOG_INFO("CreateTcpClientSocket::connect_to_host:%s\n", ep.address().to_string().c_str());
+
         bool ret_val{false};
         if (tls_cfg_.support_tls){
             // connect to provided ipAddress
-            tcp_socket_tls_->lowest_layer().connect(
-                    Tcp::endpoint(TcpIpAddress::from_string(host_ip_address), host_port_num), ec);
+            tcp_socket_tls_->lowest_layer().connect(ep, ec);
             if (ec.value() == boost::system::errc::success) {
                 TB_LOG_INFO("Tcp with tls Socket connected to host <%s,%d>\n",
                             tcp_socket_tls_->lowest_layer().remote_endpoint().address().to_string().c_str(),
@@ -157,7 +166,7 @@ namespace tcp {
         } else {
             // connect to provided ipAddress
             tcp_socket_->connect(
-                    Tcp::endpoint(TcpIpAddress::from_string(host_ip_address), host_port_num), ec);
+                    ep, ec);
             if (ec.value() == boost::system::errc::success) {
                 std::cout << "Tcp Socket connected to host "
                           << "<" << tcp_socket_->remote_endpoint().address().to_string() << ","

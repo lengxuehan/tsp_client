@@ -3,11 +3,10 @@
 //
 #include <fstream>
 #include <iostream>
-#include <netinet/in.h>
 #include <vector>
 #include <sstream>
-#include <map>
 #include "openssl_wrapper/signature.h"
+#include "openssl_wrapper/evp_cipher.h"
 
 void strings_to_bytes(const std::string &str, std::vector<uint8_t> &data){
     for(auto c : str) {
@@ -30,8 +29,28 @@ void bytes_to_string(const std::vector<uint8_t> &data, std::string &str){
     str = ss.str();
 }
 
+void test_aes_128(){
+    std::string str_token{"0123456789abcdeF"};
+    std::string str_iv{"1234567887654321"};
+    std::vector<uint8_t> plain_message_body{1,2,3,4,5,6,7,8,1,2,3,4,5,6,7, 8};
+    std::vector<uint8_t> whisper_message_body;
+    std::vector<uint8_t> decrypto_whisper_msg_body;
+    encrypt(str_token, str_iv, plain_message_body, whisper_message_body);
+
+    decrypt(str_token, str_iv, whisper_message_body, decrypto_whisper_msg_body);
+
+    std::cout << str_token << std::endl;
+}
+
 int main() {
     std::cout << "Hello, World!" << std::endl;
+    test_aes_128();
+    std::vector<uint8_t> tm{1,2,3};
+    std::string str_tm(tm.data(), tm.data() + tm.size());
+    std::cout << str_tm << std::endl;
+    std::vector<uint8_t> new_tm(tm.data(), tm.data() + tm.size());
+    tm.clear();
+    strings_to_bytes(str_tm, tm);
     std::string file_name{"/mnt/d/work/tsp_client/demo/etc/ca.crt"};
     std::ifstream file(file_name.c_str(), std::ifstream::binary);
     if (!file){
@@ -40,7 +59,7 @@ int main() {
     unsigned char buf[1024];
     std::vector<unsigned char> vec_file;
     size_t size = 0;
-    FILE *fp = fopen(file_name.data(), "rw");
+    FILE *fp = fopen(file_name.data(), "r");
     if(fp != nullptr){
         fseek(fp, 0, SEEK_END);
         size = ftell(fp);
