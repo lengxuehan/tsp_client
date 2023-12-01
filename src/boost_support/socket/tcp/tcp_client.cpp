@@ -27,7 +27,7 @@ namespace tcp {
               tls_cfg_{tls_cfg}{
         if (tls_cfg_.support_tls){
             using namespace boost::asio::ssl;
-            TB_LOG_INFO("%s", tls_cfg_.str_ca_path.c_str());
+            TB_LOG_INFO("%s\n", tls_cfg_.str_ca_path.c_str());
             tls_ctx_.load_verify_file(tls_cfg_.str_ca_path); // 如果证书是一个字节流，则使用接口add_certificate_authority
             tls_ctx_.use_private_key_file(tls_cfg_.str_client_key_path, context::pem);
             tls_ctx_.use_certificate_file(tls_cfg_.str_client_crt_path, context::pem);
@@ -66,7 +66,7 @@ namespace tcp {
         TcpErrorCodeType ec{};
         bool retVal{false};
         if (tls_cfg_.support_tls){
-            tcp_socket_tls_->set_verify_mode(boost::asio::ssl::verify_peer);
+            tcp_socket_tls_->set_verify_mode(boost::asio::ssl::verify_peer | boost::asio::ssl::verify_fail_if_no_peer_cert);
             tcp_socket_tls_->set_verify_callback([this](bool p, boost::asio::ssl::verify_context& context) {
                 return verify_certificate(p, context);
             });

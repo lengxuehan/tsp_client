@@ -3,3 +3,4 @@ cmake-build-debug
 .idea
 linux
 demo/client/build/
+demo/etc/changan/

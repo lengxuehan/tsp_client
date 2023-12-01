@@ -10,7 +10,6 @@ find_package(Threads REQUIRED)
 set_source_files_properties(client.c PROPERTIES LANGUAGE CXX )
 
 include_directories(../../include)
-include_directories(../../src)
 link_directories(../../lib)
 
 # client

@@ -23,11 +23,23 @@ namespace http_client {
 
         const std::string &get_cookie_filename() const;
 
-        void set_ssl_verification(const std::string &caFile);
+        void set_ssl_ca_verification(const std::string &caFile);
 
-        void set_ssl_verification(std::string &&caFile);
+        void set_ssl_ca_verification(std::string &&caFile);
 
-        const std::string &get_ssl_verification() const;
+        const std::string &get_ssl_ca_verification() const;
+
+        void set_ssl_cert_verification(const std::string &certFile);
+
+        void set_ssl_cert_verification(std::string &&certFile);
+
+        const std::string &get_ssl_cert_verification() const;
+
+        void set_ssl_key_verification(const std::string &keyFile);
+
+        void set_ssl_key_verification(std::string &&keyFile);
+
+        const std::string &get_ssl_key_verification() const;
 
         void set_timeout_for_connect(int value);
 
@@ -75,6 +87,8 @@ namespace http_client {
 
         mutable std::mutex sslCaFileMutex_;
         std::string sslCaFilename_;
+        std::string sslCertFilename_;
+        std::string sslKeyFilename_;
 
         int timeoutForConnect_;
         int timeoutForRead_;

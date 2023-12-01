@@ -66,11 +66,28 @@ public:
             return false;
         }
         /*set ssl*/
-        std::string sslCaFilename = client.get_ssl_verification();
+        std::string sslCaFilename = client.get_ssl_ca_verification();
+        std::string sslCertFilename = client.get_ssl_cert_verification();
+        std::string sslKeyFilename = client.get_ssl_key_verification();
         if (sslCaFilename.empty()) {
-            if (!setOption(CURLOPT_SSL_VERIFYPEER, false)) return false;
-            if (!setOption(CURLOPT_SSL_VERIFYHOST, false)) return false;
-        } else {
+            if (!setOption(CURLOPT_SSL_VERIFYPEER, false))
+                return false;
+            if (!setOption(CURLOPT_SSL_VERIFYHOST, false))
+                return false;
+        } else if(!sslCertFilename.empty() && !sslKeyFilename.empty()) {
+            if (!setOption(CURLOPT_SSL_VERIFYPEER, 1L))
+                return false;
+            //if (!setOption(CURLOPT_SSL_VERIFYHOST, 2L)) return false;
+            if (!setOption(CURLOPT_CERTINFO, sslCaFilename.data())) {
+                return false;
+            }
+            if (!setOption(CURLOPT_SSLCERT, sslCertFilename.data())) {
+                return false;
+            }
+            if (!setOption(CURLOPT_SSLKEY, sslKeyFilename.data())) {
+                return false;
+            }
+        }else {
             if (!setOption(CURLOPT_SSL_VERIFYPEER, 1L)) return false;
             if (!setOption(CURLOPT_SSL_VERIFYHOST, 2L)) return false;
             if (!setOption(CURLOPT_CAINFO, sslCaFilename.data())) {
@@ -145,19 +162,47 @@ const std::string &HttpClient::get_cookie_filename() const {
     return cookieFilename_;
 }
 
-void HttpClient::set_ssl_verification(const std::string &caFile) {
+void HttpClient::set_ssl_ca_verification(const std::string &caFile) {
     LockGuard lock(sslCaFileMutex_);
     sslCaFilename_ = caFile;
 }
 
-void HttpClient::set_ssl_verification(std::string &&caFile) {
+void HttpClient::set_ssl_ca_verification(std::string &&caFile) {
     LockGuard lock(sslCaFileMutex_);
     sslCaFilename_ = std::move(caFile);
 }
 
-const std::string &HttpClient::get_ssl_verification() const {
+const std::string &HttpClient::get_ssl_ca_verification() const {
     LockGuard lock(sslCaFileMutex_);
     return sslCaFilename_;
+}
+
+void HttpClient::set_ssl_cert_verification(const std::string &certFile) {
+    LockGuard lock(sslCaFileMutex_);
+    sslCertFilename_ = certFile;
+}
+
+void HttpClient::set_ssl_cert_verification(std::string &&certFile) {
+    LockGuard lock(sslCaFileMutex_);
+    sslCertFilename_ = std::move(certFile);
+}
+
+const std::string &HttpClient::get_ssl_cert_verification() const {
+    return sslCertFilename_;
+}
+
+void HttpClient::set_ssl_key_verification(const std::string &keyFile) {
+    LockGuard lock(sslCaFileMutex_);
+    sslKeyFilename_ = std::move(keyFile);
+}
+
+void HttpClient::set_ssl_key_verification(std::string &&keyFile) {
+    LockGuard lock(sslCaFileMutex_);
+    sslKeyFilename_ = std::move(keyFile);
+}
+
+const std::string &HttpClient::get_ssl_key_verification() const {
+    return sslKeyFilename_;
 }
 
 void HttpClient::set_timeout_for_connect(int value) {

@@ -42,3 +42,4 @@ mv server.* ./server
 
 #验证证书合法性
 #openssl s_client -connect 127.0.0.1:8888 -CAfile /data/wtxu/etc/client/ca.crt -cert /data/wtxu/etc/client/client.crt -key /data/wtxu/etc/client/client.key
+#curl -v --cacert ca.pem --cert b2.crt --key b2.key https://iotdev.dfmc.com.cn
