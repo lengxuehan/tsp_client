@@ -21,6 +21,9 @@ namespace tcp {
         uint8_t message_header_size{0};
         uint8_t body_length_index{29};
         uint8_t body_length_size{2};
+        uint8_t msg_tail_size{1};
+        uint8_t terminal_mark{0};
+        std::string ifc{};
     };
     // tcp message type
     class TcpMessageType {

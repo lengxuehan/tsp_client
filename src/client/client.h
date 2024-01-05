@@ -83,7 +83,7 @@ namespace tsp_client {
                 const connect_callback_t &connect_callback = nullptr,
                 std::uint32_t timeout_msecs = 0,
                 std::int32_t max_reconnects = 0,
-                std::uint32_t reconnect_interval_msecs = 0);
+                std::uint32_t reconnect_interval_msecs = 500);
 
         //!
         //! \return whether we are connected to the redis server

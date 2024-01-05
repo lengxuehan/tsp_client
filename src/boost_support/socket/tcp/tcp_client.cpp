@@ -66,6 +66,9 @@ namespace tcp {
         TcpErrorCodeType ec{};
         bool retVal{false};
         if (tls_cfg_.support_tls){
+            if(tcp_socket_tls_->lowest_layer().is_open()) {
+                return true;
+            }
             tcp_socket_tls_->set_verify_mode(boost::asio::ssl::verify_peer | boost::asio::ssl::verify_fail_if_no_peer_cert);
             tcp_socket_tls_->set_verify_callback([this](bool p, boost::asio::ssl::verify_context& context) {
                 return verify_certificate(p, context);
@@ -96,12 +99,23 @@ namespace tcp {
             }
         } else {
             // Open the socket
+            if(tcp_socket_->is_open()) {
+                return true;
+            }
             tcp_socket_->open(Tcp::v4(), ec);
             if (ec.value() == boost::system::errc::success) {
                 // reuse address
                 tcp_socket_->set_option(boost::asio::socket_base::reuse_address{true});
                 // Set socket to non blocking
                 tcp_socket_->non_blocking(false);
+                if(!tls_cfg_.ifc.empty()) {
+                    struct ifreq ifr;
+                    bzero(&ifr, sizeof(ifr));
+                    memcpy(ifr.ifr_name, tls_cfg_.ifc.c_str(), tls_cfg_.ifc.length());
+                    if (setsockopt(tcp_socket_->native_handle(), SOL_SOCKET, SO_BINDTODEVICE, static_cast<void*>(&ifr), sizeof(ifr)) < 0) {
+                        TB_LOG_INFO("bind to local interface:%s failed\n", tls_cfg_.ifc.c_str());
+                    }
+                }
                 //bind to local address and random port
                 tcp_socket_->bind(Tcp::endpoint(TcpIpAddress::from_string(local_ip_address_), local_port_num_), ec);
                 if (ec.value() == boost::system::errc::success) {
@@ -228,6 +242,9 @@ namespace tcp {
     bool CreateTcpClientSocket::transmit(TcpMessageConstPtr tcpMessage) {
         TcpErrorCodeType ec;
         bool ret_val{false};
+        if(!running_) {
+            return ret_val;
+        }
         if (tls_cfg_.support_tls){
             boost::asio::write(*tcp_socket_tls_,
                                boost::asio::buffer(tcpMessage->txBuffer_,
@@ -297,17 +314,37 @@ namespace tcp {
                                              (uint32_t) ((tcp_rx_message->rxBuffer_[body_length_index + 3] & 0x000000FF))));
                 }
             }(tls_cfg_.body_length_index, tls_cfg_.body_length_size);
+            read_next_bytes += tls_cfg_.msg_tail_size;
             // reserve the buffer
             tcp_rx_message->rxBuffer_.resize(tls_cfg_.message_header_size + std::size_t(read_next_bytes));
             if (tls_cfg_.support_tls){
                 boost::asio::read(*tcp_socket_tls_,
                                   boost::asio::buffer(&tcp_rx_message->rxBuffer_[tls_cfg_.message_header_size],
                                                       read_next_bytes), ec);
+                if(tls_cfg_.terminal_mark != 0) {
+                    if(tcp_rx_message->rxBuffer_.back() != tls_cfg_.terminal_mark) {
+                        boost::asio::streambuf left_response;
+                        std::size_t n = boost::asio::read_until(*tcp_socket_tls_, left_response, tls_cfg_.terminal_mark);
+                        boost::asio::streambuf::const_buffers_type buffers = left_response.data();
+                        std::copy(boost::asio::buffers_begin(buffers), boost::asio::buffers_begin(buffers) + n,
+                                  std::back_inserter(tcp_rx_message->rxBuffer_));
+                    }
+                }
             } else{
                 boost::asio::read(*tcp_socket_,
                                   boost::asio::buffer(&tcp_rx_message->rxBuffer_[tls_cfg_.message_header_size],
                                                       read_next_bytes), ec);
+                if(tls_cfg_.terminal_mark != 0) {
+                    if(tcp_rx_message->rxBuffer_.back() != tls_cfg_.terminal_mark) {
+                        boost::asio::streambuf left_response;
+                        std::size_t n = boost::asio::read_until(*tcp_socket_, left_response, tls_cfg_.terminal_mark);
+                        boost::asio::streambuf::const_buffers_type buffers = left_response.data();
+                        std::copy(boost::asio::buffers_begin(buffers), boost::asio::buffers_begin(buffers) + n,
+                                  std::back_inserter(tcp_rx_message->rxBuffer_));
+                    }
+                }
             }
+
             // all message received, transfer to upper layer
             Tcp::endpoint const endpoint_{tls_cfg_.support_tls ?
                     tcp_socket_tls_->lowest_layer().remote_endpoint()
@@ -323,7 +360,7 @@ namespace tcp {
             tcp_handler_read_(std::move(tcp_rx_message));
         } else if (ec.value() == boost::asio::error::eof) {
             running_ = false;
-            std::cout << "Remote Disconnected with: " << ec.message();
+            std::cout << "Remote Disconnected with: " << ec.message() << std::endl;
         } else {
             TB_LOG_INFO("Remote Disconnected with undefined error:%s\n", ec.message().c_str());
             running_ = false;

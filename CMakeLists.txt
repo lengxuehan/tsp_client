@@ -69,8 +69,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         rt
         )
 
+add_subdirectory(demo/taos)
 add_subdirectory(demo/client)
-#add_subdirectory(demo/server)
+add_subdirectory(demo/server)
 #add_subdirectory(demo/http_client)
 #add_subdirectory(demo/shm_map)
 #add_subdirectory(demo/signature_test)

@@ -40,7 +40,7 @@ int main() {
     std::string host_dir{"/mnt/e/learn/cpps/CppServer/tools/certificates"}; // /mnt/d/work/tsp_client/demo/etc/server
     std::cout << "Hello, World!" << std::endl;
     boost_support::socket::tcp::tls_config ssl_cfg{};
-    ssl_cfg.support_tls = true;
+    ssl_cfg.support_tls = false;
     ssl_cfg.str_ca_path = host_dir + "/ca.crt";
     ssl_cfg.str_client_key_path = host_dir + "/server.key";
     ssl_cfg.str_client_crt_path = host_dir + "/server.crt";

@@ -77,7 +77,7 @@ namespace tsp_client {
         //! \param redis_cmd command to be sent
         //! \return current instance
         //!
-        client_connection &send(std::vector<uint8_t> &&request);
+        bool send(std::vector<uint8_t> &&request);
 
     private:
         //!
@@ -115,10 +115,5 @@ namespace tsp_client {
         //! disconnection handler whenever a disconnection occurred
         //!
         disconnection_handler_t disconnection_handler_;
-
-        //!
-        //! protect internal buffer against race conditions
-        //!
-        std::mutex buffer_mutex_;
     };
 } // namespace tsp_client

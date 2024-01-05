@@ -55,12 +55,8 @@ namespace tsp_client {
         return client_->is_connected();
     }
 
-    client_connection &client_connection::send(std::vector<uint8_t> &&request) {
-        std::lock_guard<std::mutex> lock(buffer_mutex_);
-        TB_LOG_INFO("tsp_client_::send attempts to send request\n");
-        client_->send(std::move(request));
-        TB_LOG_INFO("client_connection::send end to sent request\n");
-        return *this;
+    bool client_connection::send(std::vector<uint8_t> &&request) {
+        return client_->send(std::move(request));
     }
 
     void client_connection::call_disconnection_handler(void) {

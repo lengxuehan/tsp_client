@@ -207,7 +207,7 @@ namespace tsp_client {
         };
 
         void handle_message(const std::vector<uint8_t>& message);
-
+        void thread_send_message_entry();
     private:
         //!
         //! server ip we are connected to
@@ -273,5 +273,9 @@ namespace tsp_client {
         //! number of callbacks currently being running
         //!
         std::atomic<unsigned int> callbacks_running_{0};
+        std::thread sender_thread_;
+        std::mutex sender_mutex_;
+        std::condition_variable cv_sender_;
+        std::atomic_bool exit_requested_{false};
     };
 }// namespace tsp_client
