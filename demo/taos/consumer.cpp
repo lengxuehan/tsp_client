@@ -67,7 +67,7 @@ int32_t init_env() {
 int32_t create_stream() {
     printf("create stream\n");
     TAOS_RES* pRes;
-    TAOS*     pConn = taos_connect("1d2f0e6bcdac", "root", "taosdata", NULL, 0);
+    TAOS*     pConn = taos_connect("xuwuting", "root", "taosdata", NULL, 0);
     if (pConn == NULL) {
         return -1;
     }

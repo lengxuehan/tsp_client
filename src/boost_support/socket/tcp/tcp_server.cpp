@@ -137,12 +137,12 @@ namespace tcp {
             } else {
                 TB_LOG_INFO("Tcp message sending failed with error: %s\n", ec.message().c_str());
             }
-            static bool res = true;
+            /*static bool res = true; // just test server close client socket
             if(res) {
                 res = false;
                 tcp_socket_->shutdown(TcpSocket::shutdown_both, ec);
                 tcp_socket_->close();
-            }
+            }*/
         } else {
             boost::asio::write(*tcp_socket_ssl_,
                                boost::asio::buffer(udp_tx_message->txBuffer_,

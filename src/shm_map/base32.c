@@ -24,6 +24,7 @@
 
 #include <assert.h>  // assert()
 #include <limits.h>  // CHAR_BIT
+#include <stdio.h>
 
 #include "shm_map/base32.h"
 
@@ -72,12 +73,12 @@ static unsigned char encode_char(unsigned char c)
 
 /**
  * Decode given character into a 5 bits value.
- * Returns -1 iff the argument given was an invalid base32 character
+ * Returns -1 if the argument given was an invalid base32 character
  * or a padding character.
  */
 static int decode_char(unsigned char c)
 {
-    char retval = -1;
+    int retval = -1;
 
     if (c >= 'A' && c <= 'Z')
         retval = c - 'A';
@@ -133,15 +134,21 @@ static int get_offset(int block)
  * We need this as bitwise shifting by a negative offset is undefined
  * behavior.
  */
-static unsigned char shift_right(unsigned char byte, char offset)
+static unsigned char shift_right(unsigned char byte, int offset)
 {
+    //printf("byte:%d offset:%d\n", byte, offset);
+    /*
+     * offset如果为char类型，在某些平台上-char会越界
+     * char cc = -4;
+     * printf("decode char -4 :%d\n", -cc);
+     */
     if (offset > 0)
         return byte >>  offset;
     else
         return byte << -offset;
 }
 
-static unsigned char shift_left(unsigned char byte, char offset)
+static unsigned char shift_left(unsigned char byte, int offset)
 {
     return shift_right(byte, - offset);
 }
@@ -168,6 +175,7 @@ static void encode_sequence(const unsigned char *plain, int len, unsigned char *
 
         unsigned char c = shift_right(plain[octet], junk);  // first part
 
+        printf("octet:%d junk:%d c:%d\n", octet, junk, c);
         if (junk < 0  // is there a second part?
             &&  octet < len - 1)  // is there still something to read?
         {

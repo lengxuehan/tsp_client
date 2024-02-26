@@ -54,6 +54,7 @@ void print_iter(const char *k, const char *v){
 }
 
 void print_vector(const std::vector<uint8_t> &data){
+    printf("vector size=%lu : ", data.size());
     for(auto u : data){
         printf("%d, ", u);
     }
@@ -61,7 +62,6 @@ void print_vector(const std::vector<uint8_t> &data){
 }
 
 void base32_encode_data_to_string(std::vector<uint8_t> &data, std::string &str_encode){
-    data.push_back(255);
     str_encode.resize(BASE32_LEN(data.size()));
     base32_encode(data.data(), data.size(), (uint8_t*)&str_encode[0]);
 }
@@ -73,49 +73,54 @@ void base32_decode_string_array(const std::string &str_encode, std::vector<uint8
     for(auto c : decode) {
         plain_data.push_back(c);
     }
-    while(plain_data.back() != 255){
+    while(plain_data.back() != 255 && plain_data.size() > 0){
         plain_data.pop_back();
     }
-    plain_data.pop_back();
+    if(plain_data.size() > 0) {
+        plain_data.pop_back();
+    }
 }
 
 int main() {
     std::cout << "Hello, World!" << std::endl;
 
-    std::vector<uint8_t> data{1,2,3,0,5,6,7,8,9,11,0,255,0,255,0};
-    /*
+    std::vector<uint8_t> data{0, 255};
+
     print_vector(data);
     std::string encode_str;
     base32_encode_data_to_string(data, encode_str);
-    printf("encode str_test: %s\n", encode_str.c_str());
+    printf("encode str: %s\n", encode_str.c_str());
 
-    std::vector<uint8_t> plain_data;
-    base32_decode_string_array(encode_str, plain_data);
+    std::vector<uint8_t> vec_plain_data;
+    base32_decode_string_array(encode_str, vec_plain_data);
 
-    print_vector(plain_data);
+    print_vector(vec_plain_data);
+    exit(0);
+
+    map_init(100, 500*1024, "shmmap.dat", NULL);
+
+    /* bash 64不能解决二进制中间有0的问题
+    map_put("1", acl_base64_encode(str_test.c_str(), str_test.length()));
+    char* value = map_get("12345678");
+    std::string decode = base.decode(encode);
+    printf("decode: %s\n",decode.c_str());
+    strings_to_bytes(acl_base64_decode(encode, strlen(encode)), data);
     */
-
-    map_init(10000, 10000000, "shmmap.dat", NULL);
-
-    //map_put("1", acl_base64_encode(str_test.c_str(), str_test.length()));
-    //char* value = map_get("12345678");
-    //std::string decode = base.decode(encode);
-    //printf("decode: %s\n",decode.c_str());
-    //strings_to_bytes(acl_base64_decode(encode, strlen(encode)), data);
-
     //std::string str_data;
     //bytes_to_string(data, str_data);
 
-    /*
-    std::string encode_str;
-    base32_encode_data_to_string(data, encode_str);
-    map_put("1", encode_str.c_str());
-    char* encode_v = map_get("1");
-    std::vector<uint8_t> plain_data;
-    base32_decode_string_array(encode_v, plain_data);
-    print_vector(plain_data);
-     */
 
+    //std::string encode_str;
+    //base32_encode_data_to_string(data, encode_str);
+    //map_put("1", encode_str.c_str());
+    bool contains = map_contains("/get/modem/tbox_id");
+    if(contains){
+        char* encode_v = map_get("/get/modem/tbox_id");
+        std::vector<uint8_t> plain_data;
+        base32_decode_string_array(encode_v, plain_data);
+        print_vector(plain_data);
+    }
+    exit(0);
     int cmd;
     bool command{true};
     while(command){

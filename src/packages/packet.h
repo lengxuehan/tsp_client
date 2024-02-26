@@ -13,6 +13,17 @@
 #include <vector>
 #include "utility/common.h"
 namespace tsp_client {
+
+class EndianChecker
+{
+public:
+    static bool isLittleEndianHost()
+    {
+        std::uint32_t test_number = 0x1;
+        auto* test_bytes = reinterpret_cast<std::uint8_t*>(&test_number);
+        return (test_bytes[0] == 1);
+    }
+};
 class Packet {
 public:
 	explicit Packet(std::vector<uint8_t> &buf);
@@ -49,8 +60,8 @@ public:
 	Packet& operator<<(uint8_t value);
 	Packet& operator>>(uint8_t &value);
 
-    Packet& serialize(const uint8_t* value, uint8_t count);
-    Packet& parse(uint8_t* value, uint8_t count);
+    Packet& serialize(const uint8_t* value, uint16_t count);
+    Packet& parse(uint8_t* value, uint16_t count);
 
 	Packet& operator<<(uint16_t value);
 	Packet& operator>>(uint16_t &value);

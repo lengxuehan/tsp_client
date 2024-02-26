@@ -1,5 +1,5 @@
-#include "include/client/client_connection.h"
-#include "client_tcp_socket.h"
+#include "client/client_connection.h"
+#include "client/client_tcp_socket.h"
 #include "tb_log.h"
 #include "packages/packet_helper.h"
 
@@ -17,15 +17,15 @@ namespace tsp_client {
     bool client_connection::connect(const std::string &host, std::size_t port,
                                     const disconnection_handler_t &client_disconnection_handler,
                                     const reply_callback_t &client_reply_callback) {
+        str_remote_host_ =  host;
+        TB_LOG_INFO("client_connection::connect attempts to connect host:%s port:%d\n",
+                    host.c_str(), port);
         try {
-            TB_LOG_INFO("client_connection::connect attempts to connect host:%s port:%d\n",
-                        host.c_str(), port);
-
             //! connect client
             bool res = client_->connect(host, (uint32_t) port);
-            client_->set_on_disconnection_handler(
-                    std::bind(&client_connection::tcp_client_disconnection_handler, this));
             if(res) {
+                client_->set_on_disconnection_handler(
+                        std::bind(&client_connection::tcp_client_disconnection_handler, this));
                 client_->set_message_handler([this](const std::vector<uint8_t> &data)->bool {
                     return this->tcp_client_receive_handler(data);
                 });
@@ -40,15 +40,14 @@ namespace tsp_client {
         }
         catch (const std::exception &e) {
             TB_LOG_INFO("client_connection::connect %s\n", e.what());
-            throw std::exception(e);
+            //throw std::exception(e);
+            return false;
         }
     }
 
     void client_connection::disconnect() {
         TB_LOG_INFO("client_connection::disconnect attempts to disconnect\n");
-        //! close connection
         client_->disconnect();
-        TB_LOG_INFO("client_connection::disconnect disconnected\n");
     }
 
     bool client_connection::is_connected(void) const {
@@ -59,17 +58,21 @@ namespace tsp_client {
         return client_->send(std::move(request));
     }
 
+    std::string client_connection::get_remote_host_ip() {
+        return str_remote_host_;
+    }
+
     void client_connection::call_disconnection_handler(void) {
+        TB_LOG_INFO("client_connection::call_disconnection_handler calls disconnection handler\n");
         if (disconnection_handler_) {
-            TB_LOG_INFO("client_connection::call_disconnection_handler calls disconnection handler\n");
             disconnection_handler_(*this);
+        } else {
+            TB_LOG_ERROR("client_connection::call_disconnection_handler got empyt disconnection handler\n");
         }
     }
 
     bool client_connection::tcp_client_receive_handler(const std::vector<uint8_t> &response) {
         try {
-            TB_LOG_INFO("client_connection::connection tcp_client_receive_handler packet, "
-                        "attempts to parse response\n");
             if(reply_callback_ != nullptr) {
                 reply_callback_(*this, response);
             }

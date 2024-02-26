@@ -13,7 +13,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include "client/client_tcp_iface.h"
+#include "client_tcp_iface.h"
 
 namespace tsp_client {
     class client_connection {
@@ -69,15 +69,13 @@ namespace tsp_client {
         //!
         bool is_connected(void) const;
 
-        //!
-        //! send the given command
-        //! the command is actually pipelined and only buffered, so nothing is sent to the network
-        //! please call commit() to flush the buffer
-        //!
-        //! \param redis_cmd command to be sent
-        //! \return current instance
+        //! Send tcp request
+        //! \param request request to be sent
+        //! \return whether the request is to be sent successful
         //!
         bool send(std::vector<uint8_t> &&request);
+
+        std::string get_remote_host_ip();
 
     private:
         //!
@@ -115,5 +113,6 @@ namespace tsp_client {
         //! disconnection handler whenever a disconnection occurred
         //!
         disconnection_handler_t disconnection_handler_;
+        std::string str_remote_host_{}; // remote host ip
     };
 } // namespace tsp_client

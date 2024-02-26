@@ -7,13 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # find needed packages
 find_package(Threads REQUIRED)
 
-set_source_files_properties(client.c PROPERTIES LANGUAGE CXX )
+set_source_files_properties(client.cpp PROPERTIES LANGUAGE CXX )
 
 include_directories(../../include)
 link_directories(../../lib)
 
 # client
-add_executable(${PROJECT_NAME} client.c)
+add_executable(${PROJECT_NAME} client.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE
         tsp_client
         ssl

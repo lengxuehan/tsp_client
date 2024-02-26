@@ -18,8 +18,8 @@
 
 #define padding(p) *((int *)p) = 0
 #define NIL -1
-/* 允许内存块的最大值为 8*128*1024 = 1MB */
-#define FREE_LIST_SIZE 128*1024
+/* 允许内存块的最大值为 8*128 = 1Kb */
+#define FREE_LIST_SIZE 128
 
 #ifdef __cplusplus
 extern "C" {

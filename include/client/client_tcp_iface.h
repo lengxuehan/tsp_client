@@ -12,19 +12,10 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include "client_tcp_iface.h"
+#include "client_iface.h"
 
 namespace tsp_client {
-    struct tls_tcp_config{
-        std::string server_ip;
-        uint16_t port{8888};
-        std::string str_ca_path{};
-        std::string str_client_key_path{};
-        std::string str_client_crt_path{};
-        bool support_tls{false};
-        uint8_t message_header_size{30};
-        uint8_t body_length_index{29};
-        uint8_t body_length_size{2};
-    };
     class client_tcp_iface {
     public:
         //! ctor

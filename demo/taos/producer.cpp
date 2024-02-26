@@ -49,7 +49,7 @@ int main() {
 
     // connect to server
     char      qstr[1024];
-    TAOS *taos = taos_connect("b09112d0ec96", "root", "taosdata", NULL, 0);
+    TAOS *taos = taos_connect("xuwuting", "root", "taosdata", NULL, 0);
     if (taos == NULL) {
         printf("failed to connect to server, reason:%s\n", taos_errstr(NULL));
         exit(1);
@@ -67,14 +67,21 @@ int main() {
     return 0;
 }
 
+uint64_t get_device_time(){
+    std::chrono::system_clock::time_point start_time = std::chrono::system_clock::now();
+    uint64_t u_device_time = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+            start_time.time_since_epoch()).count());
+    return u_device_time;
+}
+
 void Test(TAOS *taos, char *qstr, int index)  {
     printf("==================test at %d\n================================", index);
-    queryDB(taos, "drop database if exists demo");
-    queryDB(taos, "create database demo");
+    //queryDB(taos, "drop database if exists demo");
+    queryDB(taos, "create database if not exists demo");
     TAOS_RES *result;
     queryDB(taos, "use demo");
 
-    queryDB(taos, "create table m1 (ts timestamp, accelerator_status tinyint, brake_status tinyint, "
+    queryDB(taos, "create table if not exists m1 (ts timestamp, accelerator_status tinyint, brake_status tinyint, "
                   "speed float, b binary(10))");
     printf("success to create table\n");
 
@@ -82,12 +89,12 @@ void Test(TAOS *taos, char *qstr, int index)  {
     for (i = 0; i < 30; ++i) {
         uint8_t accelerator_status{0U};
         uint8_t brake_status{1U};
-        float speed = (i%30) * 1.0;
+        float speed = ((i+ 3)%10) * 1.0;
         if(speed < 1) {
             printf("ispeed row is 0\n");
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        sprintf(qstr, "insert into m1 values (%" PRId64 ", %d, %d, %f, '%s')", (uint64_t)(1546300800000 + i * 1000),
+        sprintf(qstr, "insert into m1 values (%" PRId64 ", %d, %d, %f, '%s')", get_device_time(),
                 accelerator_status, brake_status, speed, "hello");
         printf("qstr: %s\n", qstr);
 

@@ -50,7 +50,8 @@ static int
 get_mnode_data(int block_ptr){
 	int data_offset = block_ptr + BLOCK_HEADER_SIZE;
 	if(data_offset > pool_byte_size){
-		m_pool_log(SHMMAP_LOG_ERROR, "[get_mnode_data]The offset(%d) of data ptr is bigger than pool_byte_size(%d)", data_offset, pool_byte_size);
+		m_pool_log(SHMMAP_LOG_ERROR, "[get_mnode_data]The offset(%d) of data ptr is bigger than pool_byte_size(%d)",
+                   data_offset, pool_byte_size);
 		return -1;
 	}
 	return data_offset;
@@ -151,7 +152,8 @@ _m_free(int data_offset){
 	block_ptr = (M_block_hdr *)get_ptr(block_offset);
 	idx = block_ptr->idx;
 	if(idx<0 || idx>=free_list_len){
-		m_pool_log(SHMMAP_LOG_ERROR, "[_m_free]The free block linked list dosen't exist. The length of free list is %d, and the index of the block to free is %d",
+		m_pool_log(SHMMAP_LOG_ERROR, "[_m_free]The free block linked list do not exist. The length of free list is %d, "
+                                     "and the index of the block to free is %d",
 			free_list_len, idx);
 		return;
 	}
@@ -184,7 +186,7 @@ m_init(char *p, int pool_byte_len, shmmap_log log, bool is_inited){
 
 	free_list_len = FREE_LIST_SIZE;
 	if(pool_byte_len < INT_SIZE*3 + M_HEADER_SIZE*free_list_len + PTR_SIZE){
-		m_pool_log(SHMMAP_LOG_ERROR, "[m_init]The pool size is too small %d bytes，it can't allocatie memory for index %d bytes",
+		m_pool_log(SHMMAP_LOG_ERROR, "[m_init]The pool size is too small %d bytes，it can't allocate memory for index %d bytes",
 			pool_byte_len, INT_SIZE*2+M_HEADER_SIZE*free_list_len);
 		return false;
 	}

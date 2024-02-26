@@ -29,7 +29,7 @@ file(GLOB_RECURSE BOOST_SUPPORT_SRCS_UDP "${CMAKE_CURRENT_SOURCE_DIR}/src/boost_
 file(GLOB_RECURSE SRCS_COMMON "${CMAKE_CURRENT_SOURCE_DIR}/src/common/*.cpp")
 file(GLOB_RECURSE SRCS_CLIENT "${CMAKE_CURRENT_SOURCE_DIR}/src/client/*.cpp")
 file(GLOB_RECURSE SRCS_TINYXML2 "${CMAKE_CURRENT_SOURCE_DIR}/src/tinyxml2/*.cpp")
-file(GLOB_RECURSE SRCS_TRANSPORT "${CMAKE_CURRENT_SOURCE_DIR}/src/transport/*.cpp")
+file(GLOB_RECURSE SRCS_TSP "${CMAKE_CURRENT_SOURCE_DIR}/src/tsp/*.cpp")
 file(GLOB_RECURSE SRCS_UTILITY "${CMAKE_CURRENT_SOURCE_DIR}/src/utility/*.cpp")
 file(GLOB_RECURSE SRCS_MESSAGES "${CMAKE_CURRENT_SOURCE_DIR}/src/packages/*.cpp")
 file(GLOB_RECURSE SRCS_HTTP_CLIENT "${CMAKE_CURRENT_SOURCE_DIR}/src/http_client/*.cpp")
@@ -49,7 +49,7 @@ add_library(${PROJECT_NAME} SHARED
         ${SRCS_COMMON}
         ${SRCS_CLIENT}
         ${SRCS_TINYXML2}
-        ${SRCS_TRANSPORT}
+        ${SRCS_TSP}
         ${SRCS_UTILITY}
         ${SRCS_MESSAGES}
         ${SRCS_HTTP_CLIENT}
@@ -73,5 +73,5 @@ add_subdirectory(demo/taos)
 add_subdirectory(demo/client)
 add_subdirectory(demo/server)
 #add_subdirectory(demo/http_client)
-#add_subdirectory(demo/shm_map)
+add_subdirectory(demo/shm_map)
 #add_subdirectory(demo/signature_test)

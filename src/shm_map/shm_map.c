@@ -29,11 +29,13 @@ static void* get_shm(const char *file, int size, bool* is_inited);
 
 pthread_mutex_t *g_mptr = NULL; // proc lock
 void proc_lock(){
-    int iErrno = pthread_mutex_lock(g_mptr);
-    if (iErrno != 0) {
-        shm_map_log(SHMMAP_LOG_ERROR, "[proc_lock]iErrno=%d", iErrno);
-        if (iErrno == EOWNERDEAD) {
-            pthread_mutex_consistent(g_mptr);
+    if(g_mptr != NULL) {
+        int iErrno = pthread_mutex_lock(g_mptr);
+        if (iErrno != 0) {
+            shm_map_log(SHMMAP_LOG_ERROR, "[proc_lock]iErrno=%d", iErrno);
+            if (iErrno == EOWNERDEAD) {
+                pthread_mutex_consistent(g_mptr);
+            }
         }
     }
 }
@@ -221,7 +223,7 @@ map_put(const char *k, const char *v){
 			set_mnode_data_by_data(val_ptr, (void *)v, v_len);
 			t->value_offset = ptr_offset(val_ptr);
 			m_free(old_val);
-            //proc_unlock();
+            proc_unlock();
 			return old_val;
 		}
 	}
@@ -255,8 +257,8 @@ map_put(const char *k, const char *v){
 	entry->next_offset = NIL;
 	hdr->size++;
 	(*_map_size)++;
-    sleep(20);
-    //proc_unlock();
+    // sleep(20);
+    proc_unlock();
 	return old_val;
 }
 

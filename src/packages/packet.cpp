@@ -1,5 +1,6 @@
 #include "packet.h"
 #include <cstring>
+#include <algorithm>
 
 namespace tsp_client {
     Packet::Packet(std::vector<uint8_t> &buf)
@@ -78,15 +79,15 @@ namespace tsp_client {
         return get(value);
     }
 
-    Packet &Packet::serialize(const uint8_t* value, uint8_t count) {
-        for(uint8_t i = 0; i < count; ++i){
+    Packet &Packet::serialize(const uint8_t* value, uint16_t count) {
+        for(uint16_t i = 0; i < count; ++i){
             *this << *(value + i);
         }
         return *this;
     }
 
-    Packet &Packet::parse(uint8_t* value, uint8_t count) {
-        for(uint8_t i = 0; i < count; ++i){
+    Packet &Packet::parse(uint8_t* value, uint16_t count) {
+        for(uint16_t i = 0; i < count; ++i){
             *this >> *(value + i);
         }
         return *this;
@@ -141,6 +142,9 @@ namespace tsp_client {
 
         buf_->resize(pos_ + size);
         memcpy(&((*buf_)[pos_]), p, size);
+        if(EndianChecker::isLittleEndianHost()) {
+            std::reverse(&((*buf_)[pos_]), &((*buf_)[pos_]) + size);
+        }
         pos_ += size;
 
         return *this;
@@ -173,6 +177,10 @@ namespace tsp_client {
 
         memcpy(p, ptr_ + pos_, size);
         pos_ += size;
+
+        if(EndianChecker::isLittleEndianHost()) {
+            std::reverse((uint8_t*)p, (uint8_t*)((uint8_t*)p + size));
+        }
 
         return *this;
     }

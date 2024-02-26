@@ -40,13 +40,19 @@ namespace tsp_client {
 
         void serialize(std::vector<uint8_t> &data) const;
         bool parse(const std::vector<uint8_t> &data);
+
+        void serialize_to_ipc_msg(std::vector<uint8_t> &data);
+        bool parse_from_ips_msg(const std::vector<uint8_t> &data);
+        void dump();
+        uint8_t get_header_size();
+        uint8_t get_ipc_header_size();
     };
 #pragma pack()
 
     struct TLV {
         TLV(bool is_short);
 
-        BYTE type[2];          // 参数键的ID
+        WORD type;          // 参数键的ID
         BYTE short_length;      // 短TLV value的长度1字节,
         WORD long_length;       // 长TLV value的长度2字节
         std::vector<BYTE> value;
@@ -58,7 +64,7 @@ namespace tsp_client {
 
     struct MessageBody {
         WORD random; // 随机数
-        BYTE side;   // 服务类型
+        BYTE sid;   // 服务类型
         BYTE mid;    // 服务参数
         std::vector<TLV> content; // 消息具体内容
 

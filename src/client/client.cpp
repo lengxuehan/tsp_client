@@ -1,7 +1,8 @@
-#include "include/client/client.h"
 #include <iostream>
 #include <csignal>
+#include "client/client.h"
 #include "tb_log.h"
+#include "packages/messages.h"
 
 namespace tsp_client {
 
@@ -38,8 +39,8 @@ namespace tsp_client {
             std::uint32_t timeout_msecs,
             std::int32_t max_reconnects,
             std::uint32_t reconnect_interval_msecs) {
-        TB_LOG_INFO("tsp::client attempts to connect\n");
-
+        TB_LOG_INFO("client::connect attempts to connect\n");
+        can_be_published_ = false;
         //! Save for auto reconnects
         server_ip_ = host;
         server_port_ = port;
@@ -48,10 +49,10 @@ namespace tsp_client {
         max_reconnects_ = max_reconnects;
         reconnect_interval_msecs_ = reconnect_interval_msecs;
 
-        //! notify start
+        /*//! notify start
         if (connect_callback_) {
-            connect_callback_(host, port, connect_state::start);
-        }
+            connect_callback_(host, port, connect_state_t::start);
+        }*/
 
         auto disconnection_handler = std::bind(&client::connection_disconnection_handler, this,
                                                std::placeholders::_1);
@@ -62,29 +63,35 @@ namespace tsp_client {
         if (connected) {
             //! notify end
             if (connect_callback_) {
-                connect_callback_(server_ip_, server_port_, connect_state::ok);
+                connect_callback_(server_ip_, server_port_, connect_state_t::ok);
             }
+            can_be_published_ = true;
         } else {
             //! notify end
             if (connect_callback_) {
-                connect_callback_(server_ip_, server_port_, connect_state::failed);
+                connect_callback_(server_ip_, server_port_, connect_state_t::failed);
             }
         }
     }
 
+    void client::set_message_published_handle(const published_callback_t &published_callback) {
+        published_callback_ = published_callback;
+    }
+
     void client::disconnect() {
-        std::cout << "" << server_ip_ << " port:"
-                  << server_port_ << std::endl;
-        TB_LOG_INFO("tsp::client attempts to disconnect ip:%s port:%d\n",
-                    server_ip_.c_str(), server_port_);
+        TB_LOG_INFO("tsp::client attempts to disconnect ip:%s port:%d\n", server_ip_.c_str(), server_port_);
+
+        can_be_published_ = false;
 
         //! close connection
         client_connection_.disconnect();
 
-        //! make sure we clear buffer of unsent commands
-        clear_callbacks();
+        if (connect_callback_) {
+            connect_callback_(server_ip_, server_port_, connect_state_t::dropped);
+        }
 
-        TB_LOG_INFO("tsp::client disconnected\n");
+        //! make sure we clear buffer of unsent commands
+        // clear_callbacks();
     }
 
     bool client::is_connected(void) const {
@@ -100,16 +107,6 @@ namespace tsp_client {
     }
 
     client &client::send(const std::vector<uint8_t> &request, const reply_callback_t &callback) {
-        std::lock_guard<std::mutex> lock_callback(callbacks_mutex_);
-
-        TB_LOG_INFO("tsp::client attempts to store new command in the send buffer\n");
-        unprotected_send(request, callback);
-        TB_LOG_INFO("tsp::client stored new command in the send buffer\n");
-
-        return *this;
-    }
-
-    client &client::send(const std::vector<uint8_t> &request) {
         {
             std::lock_guard<std::mutex> lock_callback(callbacks_mutex_);
 
@@ -119,18 +116,29 @@ namespace tsp_client {
         }
 
         cv_sender_.notify_one();
+
         return *this;
+    }
+
+    void client::send(const std::vector<uint8_t> &request) {
+        {
+            std::lock_guard<std::mutex> lock_callback(callbacks_mutex_);
+
+            unprotected_send(request, [this](const std::vector<uint8_t> &message)->void{
+                handle_message(message);
+            });
+        }
+
+        cv_sender_.notify_one();
     }
 
     void client::unprotected_send(const std::vector<uint8_t> &request, const reply_callback_t &callback) {
         commands_.push({request, callback});
     }
 
-
     void client::connection_receive_handler(client_connection &, const std::vector<uint8_t> &reply) {
-        reply_callback_t callback = nullptr;
+        /*reply_callback_t callback{nullptr};
 
-        std::cout << "tsp::client received reply" << std::endl;
         {
             std::lock_guard<std::mutex> lock(callbacks_mutex_);
             callbacks_running_ += 1;
@@ -142,14 +150,16 @@ namespace tsp_client {
         }
 
         if (callback) {
-            std::cout << "tsp::client executes reply callback" << std::endl;
             callback(reply);
+        } else {
+            TB_LOG_ERROR("tsp::client executes reply got empty callback\n");
         }
 
         {
             std::lock_guard<std::mutex> lock(callbacks_mutex_);
             callbacks_running_ -= 1;
-        }
+        }*/
+        handle_message(reply);
     }
 
     void client::clear_callbacks(void) {
@@ -179,7 +189,6 @@ namespace tsp_client {
     }
 
     void client::handle_message(const std::vector<uint8_t> &message){
-        TB_LOG_INFO("client::handle_message size:%d\n", message.size());
         if(reply_callback_ != nullptr) {
             reply_callback_(message);
         }
@@ -198,22 +207,45 @@ namespace tsp_client {
                 if (exit_requested_.load()) {
                     return; // Exit thread
                 }
+                if(!can_be_published_) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+                    TB_LOG_ERROR("client::thread_send_message_entry wait to connect to remote host ip:%s\n",
+                                 client_connection_.get_remote_host_ip().c_str());
+                    continue;
+                }
                 auto& request_cmd = commands_.front();
                 std::vector<uint8_t> msg = std::move(request_cmd.command);
+                std::vector<uint8_t> tmp_msg;
+                if(published_callback_ != nullptr) {
+                    tmp_msg = msg;
+                }
                 bool res = client_connection_.send(std::move(msg));
                 if(res) {
                     commands_.pop();
                     // notify msg send successful
-                    TB_LOG_INFO("send message successful\n");
+                    if(published_callback_ != nullptr) {
+                        published_callback_(tmp_msg, true);
+                    }
+                } else {
+                    can_be_published_ = false;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+                    TB_LOG_ERROR("client::thread_send_message_entry send msg failed remote host ip:%s\n",
+                                 client_connection_.get_remote_host_ip().c_str());
+                    if(max_reconnects_ == 0) { // no try reconnect
+                        if(published_callback_ != nullptr) {
+                            published_callback_(tmp_msg, false);
+                        }
+                    }
                 }
             }// Release lock
         } while (true);
     }
 
     void client::resend_failed_commands(void) {
-        TB_LOG_INFO("client::resend_failed_commands count:%d\n", commands_.size());
+        if (commands_.empty()) {
+            return;
+        }
 
-        //! dequeue commands and move them to a local variable
         std::queue<command_request> commands;
         {
             std::lock_guard<std::mutex> lock_callback(callbacks_mutex_);
@@ -226,16 +258,27 @@ namespace tsp_client {
         while (commands.size() > 0) {
             //! Reissue the pending command and its callback.
             auto& msg = commands.front().command;
+            std::vector<uint8_t> tmp_msg;
+            if(published_callback_ != nullptr) {
+                tmp_msg = msg;
+            }
             bool res = client_connection_.send(std::move(msg));
-            if(res) {
-                // notify msg send successful
-                TB_LOG_INFO("send message successful\n");
+            if(!res) {
+                TB_LOG_ERROR("client::resend_failed_commands failed, drop message\n");
+                if(published_callback_ != nullptr) {
+                    published_callback_(tmp_msg, false);
+                }
+            } else {
+                if(published_callback_ != nullptr) {
+                    published_callback_(tmp_msg, true);
+                }
             }
             commands.pop();
         }
     }
 
     void client::connection_disconnection_handler(client_connection &connection) {
+        can_be_published_ = false;
         //! leave right now if we are already dealing with reconnection
         if (is_reconnecting()) {
             return;
@@ -245,31 +288,34 @@ namespace tsp_client {
         reconnecting_ = true;
         current_reconnect_attempts_ = 0;
 
-        std::cout << "tsp::client has been disconnected" << std::endl;
+        TB_LOG_INFO("tsp::connection_disconnection_handler has been disconnected\n");
 
         if (connect_callback_) {
-            connect_callback_(server_ip_, server_port_, connect_state::dropped);
+            connect_callback_(server_ip_, server_port_, connect_state_t::dropped);
         }
 
         //! Lock the callbacks mutex of the base class to prevent more client commands from being
         //! issued until our reconnect has completed.
         //! std::lock_guard<std::mutex> lock_callback(callbacks_mutex_);
 
+        TB_LOG_INFO("tsp::connection_disconnection_handler try to reconnect\n");
         while (should_reconnect()) {
             sleep_before_next_reconnect_attempt();
             reconnect();
         }
 
         if (!is_connected()) {
-            clear_callbacks();
+            //clear_callbacks();
 
             //! Tell the user we gave up!
+            TB_LOG_INFO("tsp::connection_disconnection_handler gave up to reconnect\n");
             if (connect_callback_) {
-                connect_callback_(server_ip_, server_port_, connect_state::stopped);
+                connect_callback_(server_ip_, server_port_, connect_state_t::stopped);
             }
         }
 
         //! terminate reconnection
+        TB_LOG_INFO("tsp::connection_disconnection_handler terminate reconnection\n");
         reconnecting_ = false;
     }
 
@@ -279,65 +325,51 @@ namespace tsp_client {
         }
 
         if (connect_callback_) {
-            connect_callback_(server_ip_, server_port_, connect_state::sleeping);
+            connect_callback_(server_ip_, server_port_, connect_state_t::sleeping);
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(reconnect_interval_msecs_));
     }
 
     bool client::should_reconnect(void) const {
+        TB_LOG_INFO("client::should_reconnect connected:%d cancel:%d max_reconnects:%d\n", is_connected(),
+                    cancel_.load(), max_reconnects_);
         return !is_connected() && !cancel_ &&
                (max_reconnects_ == -1 || current_reconnect_attempts_ < max_reconnects_);
     }
 
-    void client::unprotected_auth(const std::string &password, const reply_callback_t &reply_callback) {
-        //! save the password for reconnect attempts.
-        //! store command in pipeline
-        unprotected_send({"AUTH", "passwd"}, reply_callback);
-    }
-
-    void client::re_auth(void) {
-        //if (m_password.empty()) {
-        //    return;
-        //}
-
-//        unprotected_auth("password", [&](tsp::reply &reply) {
-//            if (reply.is_string() && reply.as_string() == "OK") {
-//                std::cout << "client successfully re-authenticated";
-//            } else {
-//                std::cout << std::string("client failed to re-authenticate: " + reply.as_string()).c_str();
-//            }
-//        });
+    void client::re_login(void) {
     }
 
 
     void client::reconnect(void) {
+        TB_LOG_INFO("client::reconnect attempts to connect current reconnect attempts:%d\n", current_reconnect_attempts_);
         //! increase the number of attempts to reconnect
         ++current_reconnect_attempts_;
 
         //! Try catch block because the redis client throws an error if connection cannot be made.
         try {
-            connect(server_ip_, server_port_, connect_callback_, reply_callback_, connect_timeout_msecs_, max_reconnects_,
-                    reconnect_interval_msecs_);
+            connect(server_ip_, server_port_, connect_callback_, reply_callback_, connect_timeout_msecs_,
+                    max_reconnects_, reconnect_interval_msecs_);
         }
         catch (...) {
         }
 
         if (!is_connected()) {
             if (connect_callback_) {
-                connect_callback_(server_ip_, server_port_, connect_state::failed);
+                connect_callback_(server_ip_, server_port_, connect_state_t::failed);
             }
             return;
         }
 
         //! notify end
         if (connect_callback_) {
-            connect_callback_(server_ip_, server_port_, connect_state::ok);
+            connect_callback_(server_ip_, server_port_, connect_state_t::ok);
         }
 
         TB_LOG_INFO("client reconnected ok\n");
 
-        // re_auth(); // user might do this on connection call back handler
+        //re_login(); // user might do this on connection call back handler
         resend_failed_commands();
     }
 
