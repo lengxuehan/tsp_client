@@ -8,6 +8,7 @@
  */
 
 #include <pthread.h>
+
 #include "shm_map/shm_map.h"
 
 static int MAX_CAPACITY = 1 << 30;	// 桶的最大个数
@@ -32,9 +33,11 @@ void proc_lock(){
     if(g_mptr != NULL) {
         int iErrno = pthread_mutex_lock(g_mptr);
         if (iErrno != 0) {
-            shm_map_log(SHMMAP_LOG_ERROR, "[proc_lock]iErrno=%d", iErrno);
             if (iErrno == EOWNERDEAD) {
                 pthread_mutex_consistent(g_mptr);
+                shm_map_log(SHMMAP_LOG_INFO, "[proc_lock]iErrno=%d", iErrno);
+            }else{
+                shm_map_log(SHMMAP_LOG_ERROR, "[proc_lock]iErrno=%d", iErrno);
             }
         }
     }
@@ -197,12 +200,12 @@ map_init(int capacity, int mem_size, const char *dat_file_path, shmmap_log log){
 	return true;
 }
 
-char*
-map_put(const char *k, const char *v){
+void
+map_put(const char *k, const char *v, uint32_t v_len){
     proc_lock();
 	H_entry *t, *entry;
 	char 	*key_ptr, *val_ptr, *old_val = NULL;
-	int 	k_len, v_len, entry_offset;
+	int 	k_len, entry_offset;
 	int 	h = hash(hash_code(k));
 	H_bulk 	*hdr = &map_bulk_list[index_for(h)];
 
@@ -218,13 +221,12 @@ map_put(const char *k, const char *v){
 		// 找到该key对应的节点，直接替换value
 		if(t != NULL){
 			old_val = (char *)get_ptr(t->value_offset);
-			v_len = strlen(v) + 1;
 			val_ptr = (char*)m_alloc(v_len);
 			set_mnode_data_by_data(val_ptr, (void *)v, v_len);
 			t->value_offset = ptr_offset(val_ptr);
 			m_free(old_val);
             proc_unlock();
-			return old_val;
+            return;
 		}
 	}
 	// 直接在tail处添加节点
@@ -232,15 +234,19 @@ map_put(const char *k, const char *v){
 	if(entry == NULL){
 		shm_map_log(SHMMAP_LOG_ERROR, "[map_put]Can't allocate memory for entry");
         proc_unlock();
-		return NULL;
+        return;
 	}
 	entry_offset = ptr_offset(entry);
 	// init entry node
 	entry->hash = h;
 	k_len = strlen(k) + 1;
-	v_len = strlen(v) + 1;
 	key_ptr = (char *)m_alloc(k_len);
 	val_ptr = (char *)m_alloc(v_len);
+    if(key_ptr == NULL || val_ptr == NULL){
+        shm_map_log(SHMMAP_LOG_ERROR, "[map_put]Can't allocate memory for key or val");
+        proc_unlock();
+        return;
+    }
 	set_mnode_data_by_data((void *)key_ptr, (void *)k, k_len);
 	set_mnode_data_by_data((void *)val_ptr, (void *)v, v_len);
 	entry->key_offset = ptr_offset(key_ptr);
@@ -257,9 +263,7 @@ map_put(const char *k, const char *v){
 	entry->next_offset = NIL;
 	hdr->size++;
 	(*_map_size)++;
-    // sleep(20);
     proc_unlock();
-	return old_val;
 }
 
 static
@@ -288,15 +292,18 @@ map_size(){
 }
 
 char*
-map_get(const char *k){
+map_get(const char *k, uint32_t* v_len){
     proc_lock();
 	H_entry *t = map_get_entry(k);
 	if(t == NULL){
         proc_unlock();
+        *v_len = 0;
         return NULL;
     }
     proc_unlock();
-	return (char*)get_ptr(t->value_offset);
+    void* val_ptr = get_ptr(t->value_offset);
+    *v_len = get_mnode_data_len_by_data(val_ptr);
+	return (char*)val_ptr;
 }
 
 bool

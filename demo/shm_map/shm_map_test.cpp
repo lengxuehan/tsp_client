@@ -84,18 +84,17 @@ void base32_decode_string_array(const std::string &str_encode, std::vector<uint8
 int main() {
     std::cout << "Hello, World!" << std::endl;
 
-    std::vector<uint8_t> data{0, 255};
+    std::vector<uint8_t> data{0, 255, 0, 1, 2, 3, 0, 0, 1, 2, 3};
 
     print_vector(data);
-    std::string encode_str;
-    base32_encode_data_to_string(data, encode_str);
-    printf("encode str: %s\n", encode_str.c_str());
+    //std::string encode_str;
+    //base32_encode_data_to_string(data, encode_str);
+    //printf("encode str: %s\n", encode_str.c_str());
 
-    std::vector<uint8_t> vec_plain_data;
-    base32_decode_string_array(encode_str, vec_plain_data);
+    //std::vector<uint8_t> vec_plain_data;
+    //base32_decode_string_array(encode_str, vec_plain_data);
+    //print_vector(vec_plain_data);
 
-    print_vector(vec_plain_data);
-    exit(0);
 
     map_init(100, 500*1024, "shmmap.dat", NULL);
 
@@ -108,20 +107,22 @@ int main() {
     */
     //std::string str_data;
     //bytes_to_string(data, str_data);
-
-
-    //std::string encode_str;
-    //base32_encode_data_to_string(data, encode_str);
-    //map_put("1", encode_str.c_str());
-    bool contains = map_contains("/get/modem/tbox_id");
-    if(contains){
-        char* encode_v = map_get("/get/modem/tbox_id");
-        std::vector<uint8_t> plain_data;
-        base32_decode_string_array(encode_v, plain_data);
-        print_vector(plain_data);
+    int count = 100;
+    uint32_t data_len{0};
+    while (count-- > 0) {
+        data.push_back(count);
+        map_put("/get/modem/tbox_id", (char*)data.data(), data.size());
+        bool contains = map_contains("/get/modem/tbox_id");
+        if(contains){
+            char* v_ptr = map_get("/get/modem/tbox_id", &data_len);
+            std::vector<uint8_t> vec_data;
+            vec_data.assign(v_ptr, v_ptr + data_len);
+            print_vector(vec_data);
+        }
     }
     exit(0);
     int cmd;
+    uint32_t v_len{0};
     bool command{true};
     while(command){
         char k[100], v[100];
@@ -134,12 +135,12 @@ int main() {
                 scanf("%s", k);
                 printf("value:\n");
                 scanf("%s", v);
-                map_put(k, v);
+                map_put(k, v, v_len);
                 break;
             case 2:
                 printf("key:\n");
                 scanf("%s", k);
-                printf("%s=>%s\n", k, map_get(k));
+                printf("%s=>%s\n", k, map_get(k, &data_len));
                 break;
             case 3:
                 map_iter(print_iter);
@@ -166,13 +167,13 @@ int main() {
             }
             sleep(1);
             std::string k = std::to_string(i);
-            map_put(k.c_str(), k.c_str());
+            map_put(k.c_str(), k.c_str(), v_len);
         }
         sleep(10);
         //wait(nullptr);
         for(int i = 0; i < 20; ++i){
             std::string k = std::to_string(i);
-            char* v = map_get(k.c_str());
+            char* v = map_get(k.c_str(), &data_len);
             //assert(k == v);
         }
     }else{ // child process
@@ -181,7 +182,7 @@ int main() {
                 continue;
             }
             std::string k = std::to_string(i);
-            map_put(k.c_str(), k.c_str());
+            map_put(k.c_str(), k.c_str(), v_len);
         }
         exit(0);
     }

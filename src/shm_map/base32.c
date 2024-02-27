@@ -25,6 +25,7 @@
 #include <assert.h>  // assert()
 #include <limits.h>  // CHAR_BIT
 #include <stdio.h>
+#include <stdint.h>
 
 #include "shm_map/base32.h"
 
@@ -55,9 +56,9 @@ static const unsigned char PADDING_CHAR = '=';
 /**
  * Pad the given buffer with len padding characters.
  */
-static void pad(unsigned char *buf, int len)
+static void pad(unsigned char *buf, uint32_t len)
 {
-    for (int i = 0; i < len; i++)
+    for (uint32_t i = 0; i < len; i++)
         buf[i] = PADDING_CHAR;
 }
 
@@ -76,9 +77,9 @@ static unsigned char encode_char(unsigned char c)
  * Returns -1 if the argument given was an invalid base32 character
  * or a padding character.
  */
-static int decode_char(unsigned char c)
+static uint32_t decode_char(unsigned char c)
 {
-    int retval = -1;
+    uint32_t retval = -1;
 
     if (c >= 'A' && c <= 'Z')
         retval = c - 'A';
@@ -100,7 +101,7 @@ static int decode_char(unsigned char c)
  * +--------+--------+
  *  octet 1 | octet 2
  */
-static int get_octet(int block)
+static uint32_t get_octet(uint32_t block)
 {
     assert(block >= 0 && block < 8);
     return (block*5) / 8;
@@ -123,7 +124,7 @@ static int get_octet(int block)
  *  |.....< 1|..
  *  +--------+-
  **/
-static int get_offset(int block)
+static uint32_t get_offset(uint32_t block)
 {
     assert(block >= 0 && block < 8);
     return (8 - 5 - (5*block) % 8);
@@ -134,7 +135,7 @@ static int get_offset(int block)
  * We need this as bitwise shifting by a negative offset is undefined
  * behavior.
  */
-static unsigned char shift_right(unsigned char byte, int offset)
+static unsigned char shift_right(unsigned char byte, uint32_t offset)
 {
     //printf("byte:%d offset:%d\n", byte, offset);
     /*
@@ -148,7 +149,7 @@ static unsigned char shift_right(unsigned char byte, int offset)
         return byte << -offset;
 }
 
-static unsigned char shift_left(unsigned char byte, int offset)
+static unsigned char shift_left(unsigned char byte, uint32_t offset)
 {
     return shift_right(byte, - offset);
 }
@@ -159,14 +160,14 @@ static unsigned char shift_left(unsigned char byte, int offset)
  * sequences shorter than 5 octets is supported and padding will be added to the
  * output as per the specification.
  */
-static void encode_sequence(const unsigned char *plain, int len, unsigned char *coded)
+static void encode_sequence(const unsigned char *plain, uint32_t len, unsigned char *coded)
 {
     assert(CHAR_BIT == 8);  // not sure this would work otherwise
     assert(len >= 0 && len <= 5);
 
-    for (int block = 0; block < 8; block++) {
-        int octet = get_octet(block);  // figure out which octet this block starts in
-        int junk = get_offset(block);  // how many bits do we drop from this octet?
+    for (uint32_t block = 0; block < 8; block++) {
+        uint32_t octet = get_octet(block);  // figure out which octet this block starts in
+        uint32_t junk = get_offset(block);  // how many bits do we drop from this octet?
 
         if (octet >= len) { // we hit the end of the buffer
             pad(&coded[block], 8 - block);
@@ -190,21 +191,21 @@ void base32_encode(const unsigned char *plain, size_t len, unsigned char *coded)
     // All the hard work is done in encode_sequence(),
     // here we just need to feed it the data sequence by sequence.
     for (size_t i = 0, j = 0; i < len; i += 5, j += 8) {
-        encode_sequence(&plain[i], (int)min(len - i, 5), &coded[j]);
+        encode_sequence(&plain[i], (uint32_t)min(len - i, 5), &coded[j]);
     }
 }
 
-static int decode_sequence(const unsigned char *coded, unsigned char *plain)
+static uint32_t decode_sequence(const unsigned char *coded, unsigned char *plain)
 {
     assert(CHAR_BIT == 8);
     assert(coded && plain);
 
     plain[0] = 0;
-    for (int block = 0; block < 8; block++) {
-        int offset = get_offset(block);
-        int octet = get_octet(block);
+    for (uint32_t block = 0; block < 8; block++) {
+        uint32_t offset = get_offset(block);
+        uint32_t octet = get_octet(block);
 
-        int c = decode_char(coded[block]);
+        uint32_t c = decode_char(coded[block]);
         if (c < 0)  // invalid char, stop here
             return octet;
 
@@ -221,7 +222,7 @@ size_t base32_decode(const unsigned char *coded, unsigned char *plain)
 {
     size_t written = 0;
     for (size_t i = 0, j = 0; ; i += 8, j += 5) {
-        int n = decode_sequence(&coded[i], &plain[j]);
+        uint32_t n = decode_sequence(&coded[i], &plain[j]);
         written += n;
         if (n < 5)
             return written;

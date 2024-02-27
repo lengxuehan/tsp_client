@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <assert.h>
 #include <errno.h>
+#include <stdint.h>
 
 #include "m_pool.h"
 
@@ -58,8 +59,8 @@ typedef void (*key_iter)(const char *k, const char *v);
  * log: 日志handler
  */
 bool map_init(int capacity, int mem_size, const char *dat_file_path, shmmap_log log);
-char* map_put(const char *k, const char *v);
-char* map_get(const char *k);
+void map_put(const char *k, const char *v, uint32_t v_len);
+char* map_get(const char *k, uint32_t* v_len);
 
 int map_size();
 bool map_contains(const char *k);

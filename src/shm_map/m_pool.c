@@ -8,47 +8,47 @@
  */
 
 #include <assert.h>
-
+#include <stdint.h>
 #include "shm_map/m_pool.h"
 
-static int M_HEADER_SIZE = sizeof(M_header);
-static int BLOCK_HEADER_SIZE = sizeof(M_block_hdr);	// 空闲块头部大小
-static int INT_SIZE = sizeof(int);
-static int PTR_SIZE = sizeof(void *);
+static uint32_t M_HEADER_SIZE = sizeof(M_header);
+static uint32_t BLOCK_HEADER_SIZE = sizeof(M_block_hdr);	// 空闲块头部大小
+static uint32_t INT_SIZE = sizeof(uint32_t);
+static uint32_t PTR_SIZE = sizeof(void *);
 
 static M_header* free_list = NULL;	// 空闲块链
-static int free_list_len;			// 空闲块链长度
+static uint32_t free_list_len;			// 空闲块链长度
 static void *pool_ptr_s;			// 共享内存的起始地址
 static void *pool_ptr_e;			// 共享内存的结束地址
-static int pool_byte_size;			// 内存池包含的字节数
-static int *current_p_offset;		// 当前空闲区的起始地址距离内存池起始地址的偏移量
+static uint32_t pool_byte_size;			// 内存池包含的字节数
+static uint32_t *current_p_offset;		// 当前空闲区的起始地址距离内存池起始地址的偏移量
 static shmmap_log m_pool_log;		// 日志handler
 
 static const char *log_level_labels[SHMMAP_LOG_LEVEL_NUM] = {"DEBUG", "INFO", "WARN", "ERROR"};
 
 /* 根据申请的内存大小返回对应的空闲块链 */
-static int free_list_idx(int size);
+static uint32_t free_list_idx(uint32_t size);
 /* 根据空闲块的起始地址获取该空闲块对应的数据字段的起始地址*/
-static int get_mnode_data(int p);
+static uint32_t get_mnode_data(uint32_t p);
 /* 根据空闲块中data字段的起始地址获取对应的空闲块的地址 */
-static int get_mnode_by_data(int p);
-static int get_mnode_by_data_ptr(void *p);
-static int m_free_blck_size();
+static uint32_t get_mnode_by_data(uint32_t p);
+static uint32_t get_mnode_by_data_ptr(void *p);
+static uint32_t m_free_blck_size();
 static void* get_cur_ptr();
-static void set_cur_ptr_offset(int offset);
+static void set_cur_ptr_offset(uint32_t offset);
 
 /* 根据块大小找到对应的链表在free_list中的下标 */
-static int
-free_list_idx(int size){
+static uint32_t
+free_list_idx(uint32_t size){
 	if(size % 8 == 0)
 		return (size >> 3) - 1;
 	return size >> 3;
 }
 
 /* 根据空闲块的偏移量返回数据字段偏移量 */
-static int
-get_mnode_data(int block_ptr){
-	int data_offset = block_ptr + BLOCK_HEADER_SIZE;
+static uint32_t
+get_mnode_data(uint32_t block_ptr){
+	uint32_t data_offset = block_ptr + BLOCK_HEADER_SIZE;
 	if(data_offset > pool_byte_size){
 		m_pool_log(SHMMAP_LOG_ERROR, "[get_mnode_data]The offset(%d) of data ptr is bigger than pool_byte_size(%d)",
                    data_offset, pool_byte_size);
@@ -58,9 +58,9 @@ get_mnode_data(int block_ptr){
 }
 
 /* 根据数据字段的偏移量获取整个块的偏移量 */
-static int
-get_mnode_by_data(int data_offset){
-	int block_offset = data_offset - BLOCK_HEADER_SIZE;
+static uint32_t
+get_mnode_by_data(uint32_t data_offset){
+	uint32_t block_offset = data_offset - BLOCK_HEADER_SIZE;
 	if(block_offset < 0){
 		m_pool_log(SHMMAP_LOG_ERROR, "[get_mnode_by_data]The offset(%d) of block ptr is lesser than 0");
 		return -1;
@@ -69,9 +69,9 @@ get_mnode_by_data(int data_offset){
 }
 
 /* 根据数据字段的指针获取块的偏移量 */
-static int
+static uint32_t
 get_mnode_by_data_ptr(void *p){
-	int offset = ptr_offset(p);
+	uint32_t offset = ptr_offset(p);
 	return get_mnode_by_data(offset);
 }
 
@@ -81,7 +81,7 @@ get_cur_ptr(){
 }
 
 static void
-set_cur_ptr_offset(int offset){
+set_cur_ptr_offset(uint32_t offset){
 	*current_p_offset = *current_p_offset + offset;
 }
 
@@ -89,11 +89,11 @@ set_cur_ptr_offset(int offset){
  * 分配大小为size字节的内存
  * return: 返回距离内存池起始地址的偏移量
  */
-static int
-_m_alloc(int size){
+static uint32_t
+_m_alloc(uint32_t size){
 	M_header 		*hdr;
 	M_block_hdr 	*p, *q;
-	int 			idx, p_offset, q_offset;
+	uint32_t 			idx, p_offset, q_offset;
 
 	idx = free_list_idx(size);
 	if(idx >= free_list_len){
@@ -116,8 +116,8 @@ _m_alloc(int size){
 		return get_mnode_data(p_offset);
 	}else{
 		// 没有空闲块时，直接从空闲内存分配
-		int chunck_size = (idx+1) << 3;
-		int block_size = BLOCK_HEADER_SIZE + chunck_size;
+		uint32_t chunck_size = (idx+1) << 3;
+		uint32_t block_size = BLOCK_HEADER_SIZE + chunck_size;
 		if(*current_p_offset + block_size > pool_byte_size){
 			m_pool_log(SHMMAP_LOG_ERROR, "[_m_alloc]The unallocated area is used up, the size of free space is %d",
 				m_free_size());
@@ -139,9 +139,9 @@ _m_alloc(int size){
  * data_offset: 数据字段距离内存池起始地址的偏移量
  */
 void
-_m_free(int data_offset){
+_m_free(uint32_t data_offset){
 	M_block_hdr		*block_ptr, *tail_block_ptr;
-	int 			idx, block_offset, tail_block_offset;
+	uint32_t 			idx, block_offset, tail_block_offset;
 	M_header		*hdr;
 
 	block_offset = get_mnode_by_data(data_offset);
@@ -174,9 +174,9 @@ _m_free(int data_offset){
 }
 
 bool
-m_init(char *p, int pool_byte_len, shmmap_log log, bool is_inited){
-	int 	i;
-	int 	*size_p;
+m_init(char *p, uint32_t pool_byte_len, shmmap_log log, bool is_inited){
+	uint32_t 	i;
+	uint32_t 	*size_p;
 
 	// 初始化日志handler
 	m_pool_log = log;
@@ -205,15 +205,15 @@ m_init(char *p, int pool_byte_len, shmmap_log log, bool is_inited){
 	 */
 	if(is_inited){
 		p += 2 * INT_SIZE;
-		current_p_offset = (int *)p;
+		current_p_offset = (uint32_t *)p;
 		p += PTR_SIZE + INT_SIZE;
 		free_list = (M_header *)p;
 	}else{
-		size_p = (int *)p;
+		size_p = (uint32_t *)p;
 		*size_p++ = free_list_len;
 		*size_p = 0;	// padding
 		p += INT_SIZE * 2;
-		current_p_offset = (int *)p;
+		current_p_offset = (uint32_t *)p;
 		p += PTR_SIZE;
 		padding(p);
 		p += INT_SIZE;
@@ -237,8 +237,8 @@ m_init(char *p, int pool_byte_len, shmmap_log log, bool is_inited){
  * 返回空闲块的起始地址
  */
 void*
-m_alloc(int size){
-	int ptr_offset = _m_alloc(size);
+m_alloc(uint32_t size){
+	uint32_t ptr_offset = _m_alloc(size);
 	if(ptr_offset != -1){
 		return get_ptr(ptr_offset);
 	}
@@ -260,25 +260,31 @@ m_free(void *data_ptr){
  * len: 数据内容的长度，字节数
  */
 void
-set_mnode_data_by_data(void *data_ptr, void *data_content_ptr, int len){
+set_mnode_data_by_data(void *data_ptr, void *data_content_ptr, uint32_t len){
 	M_block_hdr *block_ptr = (M_block_hdr *)get_ptr(get_mnode_by_data_ptr(data_ptr));
 	block_ptr->data_len = len;
 	memcpy(data_ptr, data_content_ptr, len);
 }
 
+uint32_t
+get_mnode_data_len_by_data(void *data_ptr) {
+    M_block_hdr *block_ptr = (M_block_hdr *)get_ptr(get_mnode_by_data_ptr(data_ptr));
+    return block_ptr->data_len;
+}
 
-int
+
+uint32_t
 m_free_size(){
 	return pool_byte_size - *current_p_offset;
 }
 
-int
+uint32_t
 m_pool_size(){
 	return pool_byte_size;
 }
 
 void m_free_list_info(){
-	int i;
+	uint32_t i;
 	for(i=0; i<free_list_len; i++){
 		if(free_list[i].size != 0){
 			m_pool_log(SHMMAP_LOG_INFO, "[%d, %d]", (i+1)<<3, free_list[i].size);
@@ -287,9 +293,9 @@ void m_free_list_info(){
 }
 
 /* 所有空闲块内存的大小 */
-static int
+static uint32_t
 m_free_blck_size(){
-	int i, total = 0;
+	uint32_t i, total = 0;
 	for(i=0; i<free_list_len; i++){
 		total += ((i+1)<<3)*(free_list + i)->size;
 	}
@@ -309,7 +315,7 @@ m_memory_info(M_mem_info *info){
 /* 打印空闲块列表信息 */
 void
 m_free_info(){
-	int i;
+	uint32_t i;
 	printf("Free List INFO:\n");
 	for(i=0; i<free_list_len; i++){
 		if(free_list[i].size != 0)
@@ -318,7 +324,7 @@ m_free_info(){
 }
 
 /* 获取指针相对于内存池起始地址的偏移量 */
-int
+uint32_t
 ptr_offset(void *p){
 	assert(p > pool_ptr_s);
 	if(p < pool_ptr_s){
@@ -330,7 +336,7 @@ ptr_offset(void *p){
 
 /* 根据偏移量获取指针 */
 void*
-get_ptr(int offset){
+get_ptr(uint32_t offset){
 	void *p = (char*)pool_ptr_s + offset;
     assert(p > pool_ptr_s);
     assert(p < pool_ptr_e);
