@@ -1,17 +1,48 @@
 #include <iostream>
 #include <cstring>
 #include <csignal>
+#include <stdlib.h>
 #include "client/client.h"
 #include "client/client_tcp_iface.h"
 #include "packages/messages.h"
 #include "tb_log.h"
 #include "tsp/tsp_proxy.h"
 
+#define ARRAY_SIZE(arr)    (sizeof(arr)/sizeof(arr[0]))
+
 std::condition_variable cv;
 std::atomic_bool exist{false};
-void signal_init_handler(int) {
+
+static void destroy_resource() {
+    // code to destroy resource
+}
+
+static void signal_handler(int32_t signum) {
+    destroy_resource();
+    //if ((signum >= _SIGMIN) && (signum <= _SIGMAX)) qnx
+    if ((signum >= __SIGRTMIN) && (signum <= __SIGRTMAX)){
+        signal(signum, SIG_DFL);
+        raise(signum);
+    }
+
     cv.notify_all();
     exist.store(true);
+}
+
+static void register_signals() {
+    int32_t action_signals[] = {
+        SIGABRT, SIGALRM, SIGBUS, /*SIGEMT,*/
+        SIGFPE, SIGHUP, SIGINT, SIGIO, SIGIOT,
+        SIGKILL, SIGPIPE, SIGPOLL, SIGQUIT,
+        SIGSEGV, SIGSYS, SIGTERM, SIGTRAP,
+        SIGTSTP, SIGTTIN, SIGTTOU, SIGXCPU
+    };
+
+    for (int32_t i = 0; i < ARRAY_SIZE(action_signals); ++i) {
+        signal(action_signals[i], signal_handler);
+    }
+
+    atexit(destroy_resource); // 正常退出
 }
 
 int main() {
@@ -71,7 +102,8 @@ int main() {
     }*/
     std::shared_ptr<TspProxy> tsp_proxy = std::make_shared<TspProxy>();
     tsp_proxy->on_wake_up();
-    signal(SIGINT, &signal_init_handler);
+    // signal(SIGINT, &signal_init_handler);
+    register_signals();
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
     cv.wait(lock);
